@@ -79,6 +79,8 @@ export function page(): string {
   </div>
   <p class="sub">Spin up a working <b>AI Gateway</b> and an <b>MCP Server Portal</b> on your own Cloudflare account. Every button calls the real Cloudflare API. Tear it all down again at the end.</p>
 
+  <div class="secure" id="modeBanner" style="display:none"></div>
+
   <div class="grid3">
     <div class="mini"><b>1. Create a token</b><span>We link you straight to the token page with the exact permissions. Paste it back here.</span></div>
     <div class="mini"><b>2. Provision</b><span>This Worker calls the Cloudflare API to build an AI Gateway and an MCP portal with sample servers.</span></div>
@@ -161,6 +163,20 @@ export function page(): string {
   var account = null;
 
   function el(id){ return document.getElementById(id); }
+
+  (function(){
+    var b = document.getElementById("modeBanner");
+    var local = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if(local){
+      b.textContent = "Local mode: this app is running on your own machine (wrangler dev). Your API token never leaves your laptop \u2014 it goes straight from here to the Cloudflare API.";
+      b.style.display = "block";
+    } else {
+      b.innerHTML = "Hosted demo: your token is used only in memory to call the Cloudflare API, and is never stored or logged. Want the token to stay on your own machine? Run this locally \u2014 see the README.";
+      b.style.borderLeftColor = "var(--orange2)";
+      b.style.color = "#f3e2c6";
+      b.style.display = "block";
+    }
+  })();
   function setStatus(cls, text){ el("statusDot").className = "dot " + cls; el("statusText").textContent = text; }
   function show(id, html){ var o = el(id); o.innerHTML = html; o.className = "out show"; }
   function dashLink(a, sub){ a.href = "https://dash.cloudflare.com/?to=/:account" + sub; a.style.display = "inline"; }

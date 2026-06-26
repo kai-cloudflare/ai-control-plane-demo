@@ -4,11 +4,31 @@ A near one-click Cloudflare demo. Click **Deploy to Cloudflare** (no config to f
 
 The point: a prospect should finish this in five minutes and feel like they can keep building from here.
 
-## Deploy
+## Two ways to run
+
+The app is a small Worker that proxies calls to the Cloudflare API using a token you paste in the site. The token is never stored or logged. Where it travels depends on how you run it:
+
+- **Local mode (most private, recommended for security-sensitive customers).** Run it on your own machine with `wrangler dev`. The token goes browser -> the Worker running on your laptop -> the Cloudflare API. It never leaves your machine except in the direct call to Cloudflare's own API. The site shows a green "Local mode" banner so the customer can see this.
+
+  ```
+  npm install
+  npm run dev      # opens http://localhost:8787
+  ```
+
+- **Hosted mode (lowest friction).** One person deploys the Worker once and shares the URL. The customer just opens the link and pastes their token. The token is used in memory on that Worker and never stored, but it does transit infrastructure the customer does not control, so a CISO may prefer local mode. Deploy with:
+
+  ```
+  npx wrangler deploy                       # deploys the Worker named in wrangler.jsonc
+  npx wrangler deploy --name my-demo-name   # or a separate, stable instance
+  ```
+
+- **Pure static / open an HTML file: not possible.** The Cloudflare API does not send CORS headers, so a browser cannot call it directly. A local or hosted Worker is required to proxy the calls. That Worker is the only thing the token is sent to.
+
+### Deploy to Cloudflare button
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/kai-cloudflare/ai-control-plane-demo)
 
-The deploy flow only creates the Git repo and deploys the Worker. There are no bindings, secrets, KV namespaces, or account ids to enter at deploy time. The token comes later, in the site.
+This forks the repo into the user's GitHub and wires Workers Builds for auto-deploy. It requires completing the GitHub authorization step; if that is skipped, only a placeholder is deployed. For a quick demo, `wrangler deploy` or the hosted URL is simpler.
 
 ## The flow
 
