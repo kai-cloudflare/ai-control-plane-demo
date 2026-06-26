@@ -1,0 +1,33 @@
+{
+  "name": "ai-control-plane-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "One-click Cloudflare demo that provisions an AI Gateway and an MCP Server Portal on your own account.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "types": "wrangler types"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240000.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^4.0.0"
+  },
+  "cloudflare": {
+    "label": "AI Control Plane Demo",
+    "products": ["Workers", "AI Gateway", "Access", "Secrets Store"],
+    "categories": ["ai", "security"],
+    "docs_url": "https://developers.cloudflare.com/ai-gateway/",
+    "bindings": {
+      "CF_API_TOKEN": {
+        "description": "Create a Cloudflare API token at https://dash.cloudflare.com/profile/api-tokens (Create Token > Custom Token) with these ACCOUNT permissions: AI Gateway: Edit, Zero Trust: Edit, Access: Apps and Policies: Edit, Account Settings: Read. Paste the token here. It is stored in Cloudflare Secrets Store and is never exposed in code, logs, or this app's UI."
+      },
+      "CF_ACCOUNT_ID": {
+        "description": "Optional. Your Cloudflare account ID (32-char hex). Leave blank to let the demo detect it from the token automatically."
+      },
+      "MCP_PORTAL_HOSTNAME": {
+        "description": "Optional. The hostname the MCP Server Portal will serve on once you go live (for example mcp.yourcompany.com). Leave blank to use a placeholder; you can set the real hostname later in the dashboard."
+      }
+    }
+  }
+}

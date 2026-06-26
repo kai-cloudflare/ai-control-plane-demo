@@ -1,0 +1,34 @@
+{
+  // Project Helix style one-click demo: AI Gateway + MCP Server Portal.
+  // Deploy with the "Deploy to Cloudflare" button in the README, or `npm run deploy`.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ai-control-plane-demo",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-26",
+  "observability": { "enabled": true },
+
+  // Non-secret config. The Deploy to Cloudflare flow lets the user fill these in.
+  // CF_ACCOUNT_ID is optional: if blank, the Worker resolves it from the token.
+  // MCP_PORTAL_HOSTNAME is optional: the hostname the MCP portal will eventually serve on.
+  "vars": {
+    "CF_ACCOUNT_ID": "",
+    "MCP_PORTAL_HOSTNAME": ""
+  },
+
+  // Stores the ids of resources the demo creates so status + cleanup work across requests.
+  // The Deploy to Cloudflare flow provisions this KV namespace automatically.
+  "kv_namespaces": [
+    { "binding": "DEMO_STATE", "id": "<provisioned-on-deploy>" }
+  ],
+
+  // The Cloudflare API token, held in Cloudflare Secrets Store (NOT in code or KV).
+  // The Deploy to Cloudflare flow prompts for this value and writes it to Secrets Store.
+  // The Worker reads it at runtime with `await env.CF_API_TOKEN.get()`.
+  "secrets_store_secrets": [
+    {
+      "binding": "CF_API_TOKEN",
+      "store_id": "<your-account-secrets-store-id>",
+      "secret_name": "ai-control-plane-demo-token"
+    }
+  ]
+}

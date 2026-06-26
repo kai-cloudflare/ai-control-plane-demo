@@ -1,0 +1,7 @@
+# Local development only. Copy to .dev.vars and fill in.
+# In production the token comes from Cloudflare Secrets Store, not this file.
+# Note: the Secrets Store binding does not resolve locally, so for local testing
+# use the Connect (paste) panel on the site, or adapt src/index.ts to read this.
+CF_API_TOKEN=
+CF_ACCOUNT_ID=
+MCP_PORTAL_HOSTNAME=
