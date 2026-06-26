@@ -94,6 +94,13 @@ export async function deleteGateway(token: string, accountId: string) {
   await cf(token, "DELETE", `/accounts/${accountId}/ai-gateway/gateways/${GATEWAY_ID}`);
 }
 
+// MCP portals require a real hostname on the account (a domain in one of its
+// zones). Auto-detect the first zone so customers do not have to type it.
+export async function getFirstZone(token: string, accountId: string): Promise<string | null> {
+  const r = await cf<any[]>(token, "GET", `/zones?account.id=${accountId}&per_page=5`);
+  return r.ok && r.result?.length ? r.result[0].name : null;
+}
+
 // ---- Step 2: MCP Server Portal + dummy MCP servers ----------------------
 
 // Public, unauthenticated MCP server used as a safe "dummy" to populate the portal.
@@ -195,7 +202,7 @@ export async function deleteMcpPortal(token: string, accountId: string) {
 
 // Uses the unified AI endpoint with a free Workers AI model, routed through our
 // gateway via the cf-aig-gateway-id header. Needs only the AI Gateway permission.
-export const TEST_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+export const TEST_MODEL = "@cf/meta/llama-3.2-3b-instruct";
 
 export async function runGatewayTest(token: string, accountId: string) {
   const res = await fetch(

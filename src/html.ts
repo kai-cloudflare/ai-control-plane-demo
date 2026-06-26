@@ -91,11 +91,11 @@ export function page(): string {
     <h2>Create and connect your API token</h2>
     <p>One step. We never ask for your account id &mdash; it is detected from the token. Your token stays in this browser tab and is sent only to this Worker to call the Cloudflare API.</p>
     <div class="row" style="margin-bottom:6px">
-      <a href="https://dash.cloudflare.com/?to=/:account/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22aig%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ai%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22access%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D" target="_blank" rel="noopener"><button>Create token (permissions pre-filled) &rarr;</button></a>
+      <a href="https://dash.cloudflare.com/?to=/:account/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22aig%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ai%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22mcp_portals%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22zone%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D" target="_blank" rel="noopener"><button>Create token (permissions pre-filled) &rarr;</button></a>
       <span class="note">Opens your account token page with the right permissions already checked.</span>
     </div>
-    <div class="perm">Just pick <b>Account Resources &rarr; your account</b>, then <b>Continue</b> and <b>Create Token</b>. Pre-selected:<br/>
-      <code>AI Gateway: Edit</code> &nbsp; <code>Workers AI: Edit</code> &nbsp; <code>Access: Apps and Policies: Edit</code> &nbsp; <code>Account Settings: Read</code></div>
+    <div class="perm">Pick <b>Account Resources &rarr; your account</b>, then <b>Continue</b> and <b>Create Token</b>. These should be pre-selected (add any that are missing):<br/>
+      <code>AI Gateway: Edit</code> &nbsp; <code>Workers AI: Edit</code> &nbsp; <code>MCP Portals: Edit</code> &nbsp; <code>Zone: Read</code> &nbsp; <code>Account Settings: Read</code></div>
     <label class="fld" for="tokenInput">Paste your token</label>
     <textarea id="tokenInput" placeholder="Paste the API token you just created"></textarea>
     <div class="row" style="margin-top:10px">
@@ -123,8 +123,8 @@ export function page(): string {
     <span class="step">3</span>
     <h2>Create an MCP Server Portal</h2>
     <p>Creates an MCP portal behind Cloudflare Access and attaches two sample MCP servers, so you can govern which AI agents reach which tools, with identity and policy in front.</p>
-    <label class="fld" for="hostInput">Portal hostname (optional &mdash; for going live later)</label>
-    <input id="hostInput" placeholder="mcp.yourcompany.com (leave blank for a placeholder)" />
+    <label class="fld" for="hostInput">Portal hostname (must be a domain on your Cloudflare account)</label>
+    <input id="hostInput" placeholder="leave blank to auto-use a zone on your account, or type mcp.yourdomain.com" />
     <div class="row" style="margin-top:12px">
       <button id="mcpBtn" disabled>Create MCP Portal + sample servers</button>
       <a id="mcpDash" class="note" target="_blank" rel="noopener" style="display:none">Open in dashboard &rarr;</a>

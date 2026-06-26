@@ -6,6 +6,7 @@ import {
   GATEWAY_ID,
   runGatewayTest,
   getGatewayLogs,
+  getFirstZone,
   createMcpPortal,
   getPortalStatus,
   deleteGateway,
@@ -40,11 +41,6 @@ async function authed(request: Request): Promise<{ token: string; accountId: str
   const account = await resolveAccount(body.token);
   if (!account) throw new AuthError("Token rejected or missing required permissions.");
   return { token: body.token, accountId: account.id, body };
-}
-
-function portalHostname(body: any, accountId: string): string {
-  const h = (body?.portalHostname || "").trim();
-  return h || `mcp-demo-${accountId.slice(0, 8)}.example.com`;
 }
 
 export default {
@@ -89,7 +85,21 @@ export default {
 
       if (path === "/api/deploy-mcp" && request.method === "POST") {
         const { token, accountId, body } = await authed(request);
-        const res = await createMcpPortal(token, accountId, portalHostname(body, accountId));
+        let host = (body?.portalHostname || "").trim();
+        if (!host) {
+          const zone = await getFirstZone(token, accountId);
+          if (zone) host = `mcp-demo.${zone}`;
+        }
+        if (!host) {
+          return json(
+            {
+              error:
+                "MCP portals need a hostname on a domain in your Cloudflare account. No zone was found, so enter a hostname (for example mcp.yourdomain.com) in the field and try again.",
+            },
+            400,
+          );
+        }
+        const res = await createMcpPortal(token, accountId, host);
         return json({ ok: true, ...res });
       }
 
