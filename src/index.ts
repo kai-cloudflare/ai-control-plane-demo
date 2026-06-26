@@ -9,6 +9,8 @@ import {
   getFirstZone,
   createMcpPortal,
   getPortalStatus,
+  inspectMcpServer,
+  DUMMY_SERVERS,
   deleteGateway,
   deleteMcpPortal,
   PORTAL_ID,
@@ -100,6 +102,12 @@ export default {
           );
         }
         const res = await createMcpPortal(token, accountId, host);
+        return json({ ok: true, ...res });
+      }
+
+      if (path === "/api/inspect-mcp" && request.method === "POST") {
+        const { token, accountId } = await authed(request);
+        const res = await inspectMcpServer(token, accountId, DUMMY_SERVERS[0].id);
         return json({ ok: true, ...res });
       }
 

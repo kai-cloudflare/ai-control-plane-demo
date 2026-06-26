@@ -127,9 +127,13 @@ export function page(): string {
     <input id="hostInput" placeholder="leave blank to auto-use a zone on your account, or type mcp.yourdomain.com" />
     <div class="row" style="margin-top:12px">
       <button id="mcpBtn" disabled>Create MCP Portal + sample servers</button>
-      <a id="mcpDash" class="note" target="_blank" rel="noopener" style="display:none">Open in dashboard &rarr;</a>
+      <a id="mcpDash" class="note" target="_blank" rel="noopener" style="display:none">Open the portal in your dashboard &rarr;</a>
     </div>
     <div class="out" id="mcpOut"></div>
+    <div class="row" id="mcpTestRow" style="display:none;margin-top:12px">
+      <button id="mcpTestBtn" class="secondary">Query the MCP server (list its tools)</button>
+    </div>
+    <div class="out" id="mcpTestOut"></div>
   </div>
 
   <!-- Step 4: Continue -->
@@ -174,8 +178,8 @@ export function page(): string {
   function unlock(){
     el("gwCard").className = "card"; el("mcpCard").className = "card";
     el("gwBtn").disabled = false; el("mcpBtn").disabled = false; el("cleanupBtn").disabled = false;
-    dashLink(el("gwDash"), "/ai/ai-gateway");
-    dashLink(el("mcpDash"), "/zero-trust");
+    dashLink(el("gwDash"), "/ai/ai-gateway/gateways/ai-control-plane-demo");
+    dashLink(el("mcpDash"), "/one/access-controls/ai-controls/mcp-server-portal/edit/ai-control-plane-demo-portal?tab=overview");
   }
 
   function onConnected(d){
@@ -222,7 +226,10 @@ export function page(): string {
       + "<pre>" + ep + "</pre>"
       + "<div class='row' style='margin:10px 0'><button class='copy' onclick=\\"cp('" + ep + "',this)\\">Copy endpoint</button></div>"
       + "<div class='kv'><span>Try it (swap in your provider key)</span></div>"
-      + "<pre>" + curl + "</pre>";
+      + "<pre>" + curl + "</pre>"
+      + "<div class='kv'><b>See it in your dashboard</b></div>"
+      + "<div class='row'><a target='_blank' rel='noopener' href='https://dash.cloudflare.com/?to=/:account/ai/ai-gateway/gateways/ai-control-plane-demo/logs'>Live logs &rarr;</a> <span class='note'>every request: prompt, response, tokens, cache, latency</span></div>"
+      + "<div class='row' style='margin-top:6px'><a target='_blank' rel='noopener' href='https://dash.cloudflare.com/?to=/:account/ai/ai-gateway/gateways/ai-control-plane-demo/analytics'>Analytics &rarr;</a> <span class='note'>tokens, cost, cache rate and errors over time</span></div>";
     show("gwOut", h);
     el("gwDash").style.display = "inline";
     el("gwTestBtn").disabled = false;
@@ -273,6 +280,31 @@ export function page(): string {
       + "<p class='note' style='margin-top:10px'>Open Zero Trust &rarr; Access controls &rarr; AI controls to see the portal, its servers, and add Access policies.</p>";
     show("mcpOut", h);
     el("mcpDash").style.display = "inline";
+    el("mcpTestRow").style.display = "flex";
+  }
+
+  el("mcpTestBtn").onclick = function(){
+    el("mcpTestBtn").disabled = true; show("mcpTestOut", "Syncing and querying the MCP server...");
+    post("/api/inspect-mcp").then(function(res){
+      el("mcpTestBtn").disabled = false;
+      if(res.ok && res.d.ok){ renderMcpTest(res.d); }
+      else { show("mcpTestOut", "<span style='color:var(--red)'>" + (res.d.error || "Failed") + "</span>"); }
+    });
+  };
+
+  function renderMcpTest(d){
+    var tools = "";
+    (d.tools || []).forEach(function(t){
+      tools += "<div class='kv'><span>" + esc(t.name) + "</span><code>tool</code></div>";
+      if(t.description){ tools += "<div class='note' style='margin:-2px 0 6px'>" + esc(t.description) + "</div>"; }
+    });
+    if(!tools){ tools = "<div class='kv'><span class='note'>No tools returned yet, try again in a moment.</span></div>"; }
+    var prompts = (d.prompts && d.prompts.length) ? ("<div class='kv'><b>Prompts</b><code>" + esc(d.prompts.join(", ")) + "</code></div>") : "";
+    var h = "<div class='kv'><b>" + esc(d.name || "MCP server") + "</b><span class='tag ok'>" + esc(d.status || "ready") + "</span></div>"
+      + "<div class='kv'><span>Endpoint</span><code>" + esc(d.hostname) + "</code></div>"
+      + "<div class='kv'><b>Tools the portal can broker</b></div>" + tools + prompts
+      + "<p class='note' style='margin-top:8px'>This is a live capability sync against the MCP server your portal governs. Add Access policies in the dashboard to control who can use these tools.</p>";
+    show("mcpTestOut", h);
   }
 
   el("cleanupBtn").onclick = function(){

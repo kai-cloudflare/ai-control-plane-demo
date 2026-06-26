@@ -191,6 +191,24 @@ export async function getPortalStatus(token: string, accountId: string) {
   };
 }
 
+// Exercise the portal's MCP server: trigger a capability sync, then read back
+// the tools and prompts Cloudflare discovered. A real request that proves the
+// portal can see and broker the server, without needing DNS or Access set up.
+export async function inspectMcpServer(token: string, accountId: string, serverId: string) {
+  await cf(token, "POST", `/accounts/${accountId}/access/ai-controls/mcp/servers/${serverId}/sync`);
+  await new Promise((r) => setTimeout(r, 2500));
+  const g = await cf<any>(token, "GET", `/accounts/${accountId}/access/ai-controls/mcp/servers/${serverId}`);
+  if (!g.ok || !g.result) throw new ApiError("Could not query the MCP server", g);
+  const r = g.result;
+  return {
+    name: r.name,
+    hostname: r.hostname,
+    status: r.status,
+    tools: (r.tools || []).map((t: any) => ({ name: t.name, description: t.description || "" })),
+    prompts: (r.prompts || []).map((p: any) => p.name),
+  };
+}
+
 export async function deleteMcpPortal(token: string, accountId: string) {
   await cf(token, "DELETE", `/accounts/${accountId}/access/ai-controls/mcp/portals/${PORTAL_ID}`);
   for (const s of DUMMY_SERVERS) {
