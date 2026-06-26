@@ -19,14 +19,14 @@ The deploy flow only creates the Git repo and deploys the Worker. There are no b
 
 ### The API token
 
-The site's **Create token (permissions pre-filled)** button deep-links to the token page with the right permissions already checked, using the dashboard's `permissionGroupKeys` query param. You just pick **Account Resources &rarr; your account** and create. Pre-selected permissions:
+The site's **Create token (permissions pre-filled)** button deep-links to your **account** token page (`?to=/:account/api-tokens`) with the right permissions already checked, using the dashboard's `permissionGroupKeys` query param. You just pick **Account Resources &rarr; your account** and create. Pre-selected permissions:
 
 - **AI Gateway**: Edit (`aig`) &mdash; create the gateway and run the test request
 - **Workers AI**: Edit (`ai`) &mdash; the free test inference
 - **Access: Apps and Policies**: Edit (`access`) &mdash; MCP portal and servers (the `ai-controls` endpoints)
 - **Account Settings**: Read (`account_settings`) &mdash; auto-detect your account id
 
-This prefill works on the user-token page (`/profile/api-tokens`), so the token is user-owned but scoped to your account, which is functionally identical for these calls. Set a short TTL and delete it after the demo.
+Set a short TTL and delete it after the demo.
 
 ### Test the gateway
 

@@ -91,8 +91,8 @@ export function page(): string {
     <h2>Create and connect your API token</h2>
     <p>One step. We never ask for your account id &mdash; it is detected from the token. Your token stays in this browser tab and is sent only to this Worker to call the Cloudflare API.</p>
     <div class="row" style="margin-bottom:6px">
-      <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22aig%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ai%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22access%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D" target="_blank" rel="noopener"><button>Create token (permissions pre-filled) &rarr;</button></a>
-      <span class="note">Opens the token page with the right permissions already checked.</span>
+      <a href="https://dash.cloudflare.com/?to=/:account/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22aig%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ai%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22access%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D" target="_blank" rel="noopener"><button>Create token (permissions pre-filled) &rarr;</button></a>
+      <span class="note">Opens your account token page with the right permissions already checked.</span>
     </div>
     <div class="perm">Just pick <b>Account Resources &rarr; your account</b>, then <b>Continue</b> and <b>Create Token</b>. Pre-selected:<br/>
       <code>AI Gateway: Edit</code> &nbsp; <code>Workers AI: Edit</code> &nbsp; <code>Access: Apps and Policies: Edit</code> &nbsp; <code>Account Settings: Read</code></div>
