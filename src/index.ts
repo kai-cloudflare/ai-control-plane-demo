@@ -2,56 +2,51 @@ import { page } from "./html";
 import {
   resolveAccount,
   createGateway,
+  getGatewayStatus,
   GATEWAY_ID,
   createMcpPortal,
+  getPortalStatus,
   deleteGateway,
   deleteMcpPortal,
   PORTAL_ID,
   ApiError,
 } from "./cf";
 
-interface SecretsStoreSecret {
-  get(): Promise<string>;
-}
-
-interface Env {
-  // Secrets Store binding in production; a plain string from .dev.vars in local dev.
-  CF_API_TOKEN?: SecretsStoreSecret | string;
-  DEMO_STATE: KVNamespace;
-  CF_ACCOUNT_ID?: string;
-  MCP_PORTAL_HOSTNAME?: string;
-}
+// Zero-config Worker: no bindings. The API token is collected by the website
+// (guided), held in the browser for the session, and sent with each API call.
+// It is used only to call the Cloudflare API and is never stored or logged.
+interface Env {}
 
 const json = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { "content-type": "application/json" },
-  });
+  new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json" } });
 
-// Read the API token from Cloudflare Secrets Store (set during the Deploy to
-// Cloudflare flow). Falls back to a plain string binding for local dev only.
-// The token is never echoed to the client, logged, or stored in KV.
-async function getToken(env: Env): Promise<{ token?: string; source: string }> {
-  const b: any = env.CF_API_TOKEN;
-  if (!b) return { token: undefined, source: "none" };
-  if (typeof b === "string") return b ? { token: b, source: "local" } : { token: undefined, source: "none" };
-  if (typeof b.get === "function") {
-    try {
-      const v = await b.get();
-      if (v) return { token: v, source: "secrets-store" };
-    } catch {
-      /* binding not resolvable */
-    }
+class AuthError extends Error {}
+
+async function readBody(request: Request): Promise<{ token?: string; portalHostname?: string }> {
+  try {
+    return (await request.json()) as { token?: string; portalHostname?: string };
+  } catch {
+    return {};
   }
-  return { token: undefined, source: "none" };
 }
 
-function portalHostname(env: Env, accountId: string): string {
-  return env.MCP_PORTAL_HOSTNAME?.trim() || `mcp-demo-${accountId.slice(0, 8)}.example.com`;
+// Resolve token + account for an action. Account is auto-detected from the
+// token, so the user never has to find or paste their account id.
+async function authed(request: Request): Promise<{ token: string; accountId: string; body: any }> {
+  const body = await readBody(request);
+  if (!body.token) throw new AuthError("No API token provided. Connect first.");
+  const account = await resolveAccount(body.token);
+  if (!account) throw new AuthError("Token rejected or missing required permissions.");
+  return { token: body.token, accountId: account.id, body };
+}
+
+function portalHostname(body: any, accountId: string): string {
+  const h = (body?.portalHostname || "").trim();
+  return h || `mcp-demo-${accountId.slice(0, 8)}.example.com`;
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, _env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -60,41 +55,37 @@ export default {
     }
 
     try {
-      if (path === "/api/status" && request.method === "GET") {
-        const { token, source } = await getToken(env);
-        let account = null;
-        if (token) account = await resolveAccount(token, env.CF_ACCOUNT_ID);
-        const state = ((await env.DEMO_STATE.get("state", "json")) as any) || {};
-        return json({
-          connection: source,
-          tokenPresent: !!token,
-          account,
-          gateway: state.gateway || null,
-          portal: state.portal || null,
-        });
+      // Validate the pasted token, return the detected account + what already exists.
+      if (path === "/api/connect" && request.method === "POST") {
+        const { token } = await readBody(request);
+        if (!token) return json({ error: "Paste a token first." }, 400);
+        const account = await resolveAccount(token);
+        if (!account) {
+          return json({ error: "Token rejected. Check the permissions and try again." }, 401);
+        }
+        const [gateway, portal] = await Promise.all([
+          getGatewayStatus(token, account.id),
+          getPortalStatus(token, account.id),
+        ]);
+        return json({ ok: true, account, gateway, portal });
       }
 
       if (path === "/api/deploy-gateway" && request.method === "POST") {
-        const { token, accountId } = await authed(env);
+        const { token, accountId } = await authed(request);
         const res = await createGateway(token, accountId);
-        await mergeState(env, { gateway: { id: GATEWAY_ID, endpoint: res.endpoint, created: res.created } });
         return json({ ok: true, ...res });
       }
 
       if (path === "/api/deploy-mcp" && request.method === "POST") {
-        const { token, accountId } = await authed(env);
-        const res = await createMcpPortal(token, accountId, portalHostname(env, accountId));
-        await mergeState(env, {
-          portal: { id: PORTAL_ID, hostname: res.portalHostname, servers: res.servers },
-        });
+        const { token, accountId, body } = await authed(request);
+        const res = await createMcpPortal(token, accountId, portalHostname(body, accountId));
         return json({ ok: true, ...res });
       }
 
       if (path === "/api/cleanup" && request.method === "POST") {
-        const { token, accountId } = await authed(env);
+        const { token, accountId } = await authed(request);
         await deleteMcpPortal(token, accountId);
         await deleteGateway(token, accountId);
-        await env.DEMO_STATE.delete("state");
         return json({ ok: true });
       }
 
@@ -106,22 +97,3 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
-
-class AuthError extends Error {}
-
-async function authed(env: Env): Promise<{ token: string; accountId: string }> {
-  const { token } = await getToken(env);
-  if (!token) {
-    throw new AuthError(
-      "No API token in Secrets Store. Add a secret named 'ai-control-plane-demo-token', then reload.",
-    );
-  }
-  const account = await resolveAccount(token, env.CF_ACCOUNT_ID);
-  if (!account) throw new AuthError("Token rejected or missing required permissions.");
-  return { token, accountId: account.id };
-}
-
-async function mergeState(env: Env, patch: Record<string, unknown>) {
-  const current = ((await env.DEMO_STATE.get("state", "json")) as any) || {};
-  await env.DEMO_STATE.put("state", JSON.stringify({ ...current, ...patch }));
-}

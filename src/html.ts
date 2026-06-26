@@ -1,6 +1,7 @@
 // The guided demo website, served by the Worker at "/".
-// Plain HTML/CSS/JS, no build step. The API token is read by the Worker from
-// Cloudflare Secrets Store (set during deploy), so the site never handles it.
+// The API token is created by the user (guided), pasted here, kept in the
+// browser session (sessionStorage), and sent to the Worker only to call the
+// Cloudflare API. The account id is auto-detected from the token.
 
 export function page(): string {
   return `<!doctype html>
@@ -36,6 +37,7 @@ export function page(): string {
   .mini span{color:var(--muted);font-size:13px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
     padding:22px;margin:16px 0;position:relative;overflow:hidden}
+  .card.locked{opacity:.55}
   .card h2{margin:0 0 4px;font-size:18px}
   .card .step{position:absolute;top:18px;right:20px;color:var(--line);font-weight:800;font-size:34px}
   .card p{color:var(--muted);margin:6px 0 16px}
@@ -43,6 +45,9 @@ export function page(): string {
     font-weight:700;padding:11px 18px;border-radius:10px;cursor:pointer;font-size:14px}
   button.secondary{background:transparent;color:var(--txt);border:1px solid var(--line)}
   button:disabled{opacity:.45;cursor:not-allowed}
+  input,textarea{width:100%;background:#0c1018;color:var(--txt);border:1px solid var(--line);
+    border-radius:10px;padding:12px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+  textarea{min-height:70px}
   .out{margin-top:14px;background:#0c1018;border:1px solid var(--line);border-radius:10px;padding:14px;display:none}
   .out.show{display:block}
   code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
@@ -55,11 +60,12 @@ export function page(): string {
   .tag.ok{color:var(--green);border-color:#1f6}
   .note{font-size:12.5px;color:var(--muted)}
   .copy{font-size:12px;padding:6px 10px}
+  .perm{background:#0c1018;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:13px}
+  .perm code{color:var(--orange2)}
   hr{border:0;border-top:1px solid var(--line);margin:26px 0}
-  .secure{border-left:3px solid var(--green);background:var(--panel2);padding:12px 14px;border-radius:8px;font-size:13.5px;color:#cfe9dd;display:none}
-  .warnbox{border-left:3px solid var(--orange2);background:var(--panel2);padding:14px 16px;border-radius:8px;font-size:13.5px;color:#f3e2c6;display:none}
   ul.next{margin:8px 0 0;padding-left:18px;color:var(--muted)}
   ul.next li{margin:7px 0}
+  label.fld{display:block;font-size:12.5px;color:var(--muted);margin:0 0 6px}
 </style>
 </head>
 <body>
@@ -68,29 +74,39 @@ export function page(): string {
     <div class="logo">CF</div>
     <div>
       <h1>AI Control Plane &mdash; Instant Demo</h1>
-      <div class="pill"><span id="statusDot" class="dot"></span><span id="statusText">Checking connection&hellip;</span></div>
+      <div class="pill"><span id="statusDot" class="dot"></span><span id="statusText">Ready when you are</span></div>
     </div>
   </div>
-  <p class="sub">Spin up a working <b>AI Gateway</b> and an <b>MCP Server Portal</b> on your own Cloudflare account in two clicks. Nothing here is a mockup &mdash; every button calls the real Cloudflare API. Tear it all down again at the end.</p>
+  <p class="sub">Spin up a working <b>AI Gateway</b> and an <b>MCP Server Portal</b> on your own Cloudflare account. Every button calls the real Cloudflare API. Tear it all down again at the end.</p>
 
   <div class="grid3">
-    <div class="mini"><b>1. Secure token</b><span>Your API token was stored in Cloudflare Secrets Store during deploy. This app reads it through a binding and never sees or logs it.</span></div>
-    <div class="mini"><b>2. Provision</b><span>This Worker calls the Cloudflare API to create an AI Gateway and an MCP portal with sample servers.</span></div>
+    <div class="mini"><b>1. Create a token</b><span>We link you straight to the token page with the exact permissions. Paste it back here.</span></div>
+    <div class="mini"><b>2. Provision</b><span>This Worker calls the Cloudflare API to build an AI Gateway and an MCP portal with sample servers.</span></div>
     <div class="mini"><b>3. Continue</b><span>Open the results in your dashboard and keep building. Everything is yours to keep or delete.</span></div>
   </div>
 
-  <div class="secure" id="secureBanner">
-    Your API token is stored in <b>Cloudflare Secrets Store</b> and read by this Worker through a binding. It is never exposed in code, logs, or this page.
-  </div>
-
-  <div class="warnbox" id="warnBanner">
-    <b>No token found in Secrets Store.</b> Add a secret named <code>ai-control-plane-demo-token</code> to your account's Secrets Store (or redeploy and paste the token when prompted), then reload this page.
-    <div style="margin-top:8px"><a id="ssDash" target="_blank" rel="noopener">Open Secrets Store in the dashboard &rarr;</a></div>
-  </div>
-
-  <!-- Step 1: AI Gateway -->
-  <div class="card">
+  <!-- Step 1: Connect -->
+  <div class="card" id="connectCard">
     <span class="step">1</span>
+    <h2>Create and connect your API token</h2>
+    <p>One step. We never ask for your account id &mdash; it is detected from the token. Your token stays in this browser tab and is sent only to this Worker to call the Cloudflare API.</p>
+    <div class="row" style="margin-bottom:6px">
+      <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%5D" target="_blank" rel="noopener"><button>Open the API token page &rarr;</button></a>
+      <span class="note">Create Token &rarr; Custom Token</span>
+    </div>
+    <div class="perm">Give it these <b>account</b> permissions:<br/>
+      <code>AI Gateway: Edit</code> &nbsp; <code>Zero Trust: Edit</code> &nbsp; <code>Access: Apps and Policies: Edit</code> &nbsp; <code>Account Settings: Read</code></div>
+    <label class="fld" for="tokenInput">Paste your token</label>
+    <textarea id="tokenInput" placeholder="Paste the API token you just created"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="connectBtn">Connect</button>
+      <span class="note" id="connectMsg"></span>
+    </div>
+  </div>
+
+  <!-- Step 2: AI Gateway -->
+  <div class="card locked" id="gwCard">
+    <span class="step">2</span>
     <h2>Deploy an AI Gateway</h2>
     <p>Creates a gateway with caching, rate limiting, and full logging. Point any OpenAI / Anthropic / Workers AI app at it by changing one base URL.</p>
     <div class="row">
@@ -100,21 +116,23 @@ export function page(): string {
     <div class="out" id="gwOut"></div>
   </div>
 
-  <!-- Step 2: MCP Portal -->
-  <div class="card">
-    <span class="step">2</span>
+  <!-- Step 3: MCP Portal -->
+  <div class="card locked" id="mcpCard">
+    <span class="step">3</span>
     <h2>Create an MCP Server Portal</h2>
     <p>Creates an MCP portal behind Cloudflare Access and attaches two sample MCP servers, so you can govern which AI agents reach which tools, with identity and policy in front.</p>
-    <div class="row">
+    <label class="fld" for="hostInput">Portal hostname (optional &mdash; for going live later)</label>
+    <input id="hostInput" placeholder="mcp.yourcompany.com (leave blank for a placeholder)" />
+    <div class="row" style="margin-top:12px">
       <button id="mcpBtn" disabled>Create MCP Portal + sample servers</button>
       <a id="mcpDash" class="note" target="_blank" rel="noopener" style="display:none">Open in dashboard &rarr;</a>
     </div>
     <div class="out" id="mcpOut"></div>
   </div>
 
-  <!-- Step 3: Continue -->
+  <!-- Step 4: Continue -->
   <div class="card">
-    <span class="step">3</span>
+    <span class="step">4</span>
     <h2>Continue from here</h2>
     <p>This is a starting point, not a dead end. Natural next steps:</p>
     <ul class="next">
@@ -129,50 +147,58 @@ export function page(): string {
     <button id="cleanupBtn" class="secondary" disabled>Delete everything this demo created</button>
     <span class="note" id="cleanupMsg"></span>
   </div>
-  <p class="note" style="margin-top:24px">Built on Cloudflare Workers, Secrets Store, AI Gateway, and Access (MCP portals). See the README for how it works.</p>
+  <p class="note" style="margin-top:24px">Built on Cloudflare Workers, AI Gateway, and Access (MCP portals). Your token is never stored server-side. See the README for how it works.</p>
 </div>
 
 <script>
+  var token = sessionStorage.getItem("cf_token") || "";
   var account = null;
 
   function el(id){ return document.getElementById(id); }
   function setStatus(cls, text){ el("statusDot").className = "dot " + cls; el("statusText").textContent = text; }
   function show(id, html){ var o = el(id); o.innerHTML = html; o.className = "out show"; }
+  function dashLink(a, sub){ a.href = "https://dash.cloudflare.com/?to=/:account" + sub; a.style.display = "inline"; }
 
-  function post(path){
-    return fetch(path, { method:"POST", headers:{ "content-type":"application/json" }, body:"{}" })
+  function body(extra){
+    var b = { token: token };
+    if(extra){ for(var k in extra){ b[k] = extra[k]; } }
+    return JSON.stringify(b);
+  }
+  function post(path, extra){
+    return fetch(path, { method:"POST", headers:{ "content-type":"application/json" }, body: body(extra) })
       .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); });
   }
 
-  function enableActions(on){
-    el("gwBtn").disabled = !on; el("mcpBtn").disabled = !on; el("cleanupBtn").disabled = !on;
+  function unlock(){
+    el("gwCard").className = "card"; el("mcpCard").className = "card";
+    el("gwBtn").disabled = false; el("mcpBtn").disabled = false; el("cleanupBtn").disabled = false;
+    dashLink(el("gwDash"), "/ai/ai-gateway");
+    dashLink(el("mcpDash"), "/zero-trust");
   }
 
-  function dashLink(a, sub){ a.href = "https://dash.cloudflare.com/?to=/:account" + sub; a.style.display = "inline"; }
-
-  function init(){
-    el("ssDash").href = "https://dash.cloudflare.com/?to=/:account/secrets-store";
-    fetch("/api/status").then(function(r){ return r.json(); }).then(function(s){
-      account = s.account;
-      if(s.tokenPresent && account){
-        el("secureBanner").style.display = "block";
-        setStatus("ok", "Connected: " + account.name);
-        enableActions(true);
-        dashLink(el("gwDash"), "/ai/ai-gateway");
-        dashLink(el("mcpDash"), "/zero-trust");
-      } else if(s.tokenPresent && !account){
-        setStatus("err", "Token present but rejected (check permissions)");
-        el("warnBanner").style.display = "block";
-        enableActions(false);
-      } else {
-        setStatus("warn", "No token in Secrets Store");
-        el("warnBanner").style.display = "block";
-        enableActions(false);
-      }
-      if(s.gateway){ renderGateway({ endpoint:s.gateway.endpoint, created:false }); }
-      if(s.portal){ renderPortal({ portal:{ name:"AI Control Plane Demo Portal" }, servers:s.portal.servers, portalHostname:s.portal.hostname }); }
-    }).catch(function(){ setStatus("err", "Could not reach the Worker"); });
+  function onConnected(d){
+    account = d.account;
+    setStatus("ok", "Connected: " + account.name);
+    el("connectMsg").textContent = "";
+    unlock();
+    if(d.gateway){ renderGateway({ endpoint:d.gateway.endpoint, created:false }); }
+    if(d.portal){ renderPortal({ portal:{ name:"AI Control Plane Demo Portal" }, servers:d.portal.servers, portalHostname:d.portal.hostname }); }
   }
+
+  function connect(silent){
+    if(!token){ return; }
+    if(!silent){ el("connectMsg").textContent = "Connecting..."; }
+    post("/api/connect").then(function(res){
+      if(res.ok && res.d.ok){ sessionStorage.setItem("cf_token", token); onConnected(res.d); }
+      else { el("connectMsg").textContent = (res.d.error || "Failed."); if(!silent){ token=""; sessionStorage.removeItem("cf_token"); } }
+    });
+  }
+
+  el("connectBtn").onclick = function(){
+    var t = el("tokenInput").value.trim();
+    if(!t){ el("connectMsg").textContent = "Paste a token first."; return; }
+    token = t; connect(false);
+  };
 
   el("gwBtn").onclick = function(){
     el("gwBtn").disabled = true; show("gwOut", "Creating AI Gateway...");
@@ -191,7 +217,7 @@ export function page(): string {
       + "  -d '{\\"model\\":\\"gpt-4o-mini\\",\\"messages\\":[{\\"role\\":\\"user\\",\\"content\\":\\"hello\\"}]}'";
     var h = "<div class='kv'><b>AI Gateway</b><span class='tag ok'>" + (d.created ? "created" : "ready") + "</span></div>"
       + "<div class='kv'><span>Endpoint</span></div>"
-      + "<pre id='ep'>" + ep + "</pre>"
+      + "<pre>" + ep + "</pre>"
       + "<div class='row' style='margin:10px 0'><button class='copy' onclick=\\"cp('" + ep + "',this)\\">Copy endpoint</button></div>"
       + "<div class='kv'><span>Try it (swap in your provider key)</span></div>"
       + "<pre>" + curl + "</pre>";
@@ -201,7 +227,8 @@ export function page(): string {
 
   el("mcpBtn").onclick = function(){
     el("mcpBtn").disabled = true; show("mcpOut", "Creating MCP portal and sample servers...");
-    post("/api/deploy-mcp").then(function(res){
+    var host = el("hostInput").value.trim();
+    post("/api/deploy-mcp", host ? { portalHostname: host } : null).then(function(res){
       el("mcpBtn").disabled = false;
       if(res.ok && res.d.ok){ renderPortal(res.d); }
       else { show("mcpOut", "<span style='color:var(--red)'>" + (res.d.error || "Failed") + "</span>"); }
@@ -237,7 +264,8 @@ export function page(): string {
   }
   window.cp = cp;
 
-  init();
+  // If a token is already in this session, reconnect silently.
+  if(token){ el("tokenInput").value = token; setStatus("warn", "Reconnecting..."); connect(true); }
 </script>
 </body>
 </html>`;

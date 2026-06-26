@@ -85,6 +85,11 @@ export function gatewayEndpoint(accountId: string) {
   return `https://gateway.ai.cloudflare.com/v1/${accountId}/${GATEWAY_ID}`;
 }
 
+export async function getGatewayStatus(token: string, accountId: string) {
+  const r = await cf(token, "GET", `/accounts/${accountId}/ai-gateway/gateways/${GATEWAY_ID}`);
+  return r.ok && r.result ? { id: GATEWAY_ID, endpoint: gatewayEndpoint(accountId) } : null;
+}
+
 export async function deleteGateway(token: string, accountId: string) {
   await cf(token, "DELETE", `/accounts/${accountId}/ai-gateway/gateways/${GATEWAY_ID}`);
 }
@@ -163,6 +168,16 @@ export async function createMcpPortal(
   }
 
   return { portal, servers, portalHostname };
+}
+
+export async function getPortalStatus(token: string, accountId: string) {
+  const r = await cf(token, "GET", `/accounts/${accountId}/access/ai-controls/mcp/portals/${PORTAL_ID}`);
+  if (!r.ok || !r.result) return null;
+  return {
+    id: PORTAL_ID,
+    hostname: r.result.hostname,
+    servers: DUMMY_SERVERS.map((s) => ({ id: s.id, name: s.name, hostname: s.hostname, status: "exists" })),
+  };
 }
 
 export async function deleteMcpPortal(token: string, accountId: string) {

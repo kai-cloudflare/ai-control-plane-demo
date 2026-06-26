@@ -2,22 +2,5 @@
   "name": "ai-control-plane-demo",
   "main": "src/index.ts",
   "compatibility_date": "2025-09-01",
-  "observability": { "enabled": true },
-  "vars": {
-    "CF_ACCOUNT_ID": "",
-    "MCP_PORTAL_HOSTNAME": ""
-  },
-  "kv_namespaces": [
-    {
-      "binding": "DEMO_STATE",
-      "id": "0123456789abcdef0123456789abcdef"
-    }
-  ],
-  "secrets_store_secrets": [
-    {
-      "binding": "CF_API_TOKEN",
-      "store_id": "demo",
-      "secret_name": "ai-control-plane-demo-token"
-    }
-  ]
+  "observability": { "enabled": true }
 }

@@ -1,6 +1,6 @@
 # AI Control Plane &mdash; Instant Demo
 
-A one-click Cloudflare demo. Click **Deploy to Cloudflare**, paste a scoped API token (it goes straight into **Cloudflare Secrets Store**), and you get a live website that provisions a real **AI Gateway** and a real **MCP Server Portal** (with sample MCP servers) on your own account. Everything is reversible with one button.
+A near one-click Cloudflare demo. Click **Deploy to Cloudflare** (no config to fill in), open the Worker URL, and a guided site walks you through creating a scoped API token and then provisions a real **AI Gateway** and a real **MCP Server Portal** (with sample MCP servers) on your own account. Everything is reversible with one button.
 
 The point: a prospect should finish this in five minutes and feel like they can keep building from here.
 
@@ -8,22 +8,31 @@ The point: a prospect should finish this in five minutes and feel like they can 
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/kai-cloudflare/ai-control-plane-demo)
 
-During the deploy flow Cloudflare will:
+The deploy flow only creates the Git repo and deploys the Worker. There are no bindings, secrets, KV namespaces, or account ids to enter at deploy time. The token comes later, in the site.
 
-1. Clone this repo into your own GitHub and set up CI/CD.
-2. Provision the KV namespace used for demo state.
-3. Prompt you for the **`CF_API_TOKEN`** secret and store it in **Secrets Store** (open beta, one store per account).
+## The flow
 
-## The API token
+1. Deploy and open the Worker URL.
+2. The site links you straight to the API token page and lists the exact permissions. Create the token.
+3. Paste it into the site and click **Connect**. The account id is detected from the token automatically, so you never have to find or paste it.
+4. Click **Deploy AI Gateway**, then **Create MCP Portal**. Open each result in your dashboard. Tear it all down with the cleanup button.
 
-Create it at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) &rarr; **Create Token** &rarr; **Custom Token**, scoped to your account:
+### The API token
+
+Create it at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) &rarr; **Create Token** &rarr; **Custom Token**, with these account permissions:
 
 - **AI Gateway**: Edit
 - **Zero Trust**: Edit
 - **Access: Apps and Policies**: Edit
 - **Account Settings**: Read
 
-Set a short TTL and delete it after the demo. The token is entered in the trusted Cloudflare deploy flow, stored in Secrets Store, and read by the Worker via `await env.CF_API_TOKEN.get()`. It is never typed into this app, transmitted to it, written to code or KV, or shown on the page. That is the whole security story: the demo app cannot see your token.
+Set a short TTL and delete it after the demo.
+
+### Where the token lives
+
+The token is kept in your browser tab (`sessionStorage`) and sent to the Worker only to call the Cloudflare API. It is never written to code, never persisted server-side, and never logged. Closing the tab clears it.
+
+> Why not Secrets Store? A Secrets Store binding has to be given its value at deploy time, which would force the deploy screen to ask for a token before you have created one. Collecting it in the guided site keeps the deploy step empty and the experience smooth. For a permanent internal tool you would instead wire a Secrets Store binding and skip the paste step.
 
 ## What it builds
 
@@ -33,31 +42,30 @@ Set a short TTL and delete it after the demo. The token is entered in the truste
 ## How it works
 
 ```
-Browser ──→ Worker (this app) ──→ Cloudflare REST API
-                │                      ├─ POST /ai-gateway/gateways
-                │                      └─ POST /access/ai-controls/mcp/{servers,portals}
-                └── reads token from ── Secrets Store binding (CF_API_TOKEN)
+Browser (holds token) ──→ Worker (this app) ──→ Cloudflare REST API
+                                                  ├─ GET /accounts                 (detect account)
+                                                  ├─ POST /ai-gateway/gateways
+                                                  └─ POST /access/ai-controls/mcp/{servers,portals}
 ```
 
-- `src/index.ts` &mdash; router: serves the site and the `/api/*` actions.
-- `src/cf.ts` &mdash; Cloudflare API client and the create/delete steps (idempotent).
+- `src/index.ts` &mdash; router: serves the site and the `/api/*` actions; token arrives in the request body.
+- `src/cf.ts` &mdash; Cloudflare API client and the create/read/delete steps (idempotent).
 - `src/html.ts` &mdash; the guided single-page site.
 
-The Worker reads the token from Secrets Store (set during the Deploy to Cloudflare flow, supported since July 2025). If no stored token is found, the site tells you to add the `ai-control-plane-demo-token` secret in the dashboard and reload. The site itself never accepts or handles the token.
+State is not persisted: status is derived live by reading the gateway and portal by their fixed ids, and cleanup deletes them by id. No KV needed.
 
 ## Run locally
 
 ```
 npm install
-cp .dev.vars.example .dev.vars   # put a token in CF_API_TOKEN for local dev
 npm run dev
 ```
 
-Secrets Store bindings do not resolve in local dev, so locally the Worker reads `CF_API_TOKEN` as a plain string from `.dev.vars`. In production it reads from Secrets Store via the binding.
+Then open the local URL and paste a token in the site, exactly like production.
 
 ## Clean up
 
-The site has a **Delete everything this demo created** button. It removes the MCP portal, the sample MCP servers, and the AI Gateway, then clears demo state.
+The site has a **Delete everything this demo created** button. It removes the MCP portal, the sample MCP servers, and the AI Gateway.
 
 ## Notes
 
