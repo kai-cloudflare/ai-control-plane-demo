@@ -15,8 +15,7 @@
   },
   "cloudflare": {
     "label": "AI Control Plane Demo",
-    "products": ["Workers", "AI Gateway", "Access", "Secrets Store"],
-    "categories": ["ai", "security"],
+    "categories": ["ai"],
     "docs_url": "https://developers.cloudflare.com/ai-gateway/",
     "bindings": {
       "CF_API_TOKEN": {
