@@ -4,6 +4,8 @@ import {
   createGateway,
   getGatewayStatus,
   GATEWAY_ID,
+  runGatewayTest,
+  getGatewayLogs,
   createMcpPortal,
   getPortalStatus,
   deleteGateway,
@@ -74,6 +76,15 @@ export default {
         const { token, accountId } = await authed(request);
         const res = await createGateway(token, accountId);
         return json({ ok: true, ...res });
+      }
+
+      if (path === "/api/test-gateway" && request.method === "POST") {
+        const { token, accountId } = await authed(request);
+        const test = await runGatewayTest(token, accountId);
+        // Logs can lag a second behind the request.
+        await new Promise((r) => setTimeout(r, 1500));
+        const logs = await getGatewayLogs(token, accountId);
+        return json({ ok: true, ...test, logs });
       }
 
       if (path === "/api/deploy-mcp" && request.method === "POST") {

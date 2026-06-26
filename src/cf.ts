@@ -122,6 +122,7 @@ export async function createMcpPortal(
   portalHostname: string,
 ) {
   const servers: { id: string; name: string; hostname: string; status: string }[] = [];
+  const attachedIds: string[] = [];
 
   for (const s of DUMMY_SERVERS) {
     // Idempotent create per server.
@@ -130,21 +131,23 @@ export async function createMcpPortal(
       "GET",
       `/accounts/${accountId}/access/ai-controls/mcp/servers/${s.id}`,
     );
-    if (!existing.ok) {
-      const r = await cf(token, "POST", `/accounts/${accountId}/access/ai-controls/mcp/servers`, {
-        id: s.id,
-        name: s.name,
-        hostname: s.hostname,
-        auth_type: s.auth_type,
-        description: s.description,
-      });
-      servers.push({ id: s.id, name: s.name, hostname: s.hostname, status: r.ok ? "created" : "skipped" });
-    } else {
+    if (existing.ok && existing.result) {
       servers.push({ id: s.id, name: s.name, hostname: s.hostname, status: "exists" });
+      attachedIds.push(s.id);
+      continue;
     }
+    const r = await cf(token, "POST", `/accounts/${accountId}/access/ai-controls/mcp/servers`, {
+      id: s.id,
+      name: s.name,
+      hostname: s.hostname,
+      auth_type: s.auth_type,
+      description: s.description,
+    });
+    servers.push({ id: s.id, name: s.name, hostname: s.hostname, status: r.ok ? "created" : "skipped" });
+    if (r.ok) attachedIds.push(s.id); // only attach servers that exist, or the portal create fails
   }
 
-  // Create the portal and attach the servers.
+  // Create the portal and attach the servers that exist.
   let portal: any;
   const existingPortal = await cf(
     token,
@@ -159,9 +162,10 @@ export async function createMcpPortal(
       name: "AI Control Plane Demo Portal",
       hostname: portalHostname,
       description: "Created by the AI Control Plane demo. Governs MCP server access behind Cloudflare Access.",
-      allow_code_mode: true,
+      allow_code_mode: false,
       secure_web_gateway: false,
-      servers: DUMMY_SERVERS.map((s) => s.id),
+      // The API expects objects: { server_id }, not bare ids.
+      servers: attachedIds.map((id) => ({ server_id: id })),
     });
     if (!r.ok) throw new ApiError("Could not create MCP portal", r);
     portal = r.result;
@@ -187,6 +191,54 @@ export async function deleteMcpPortal(token: string, accountId: string) {
   }
 }
 
+// ---- Step 1b: send a free test request through the gateway --------------
+
+// Uses the unified AI endpoint with a free Workers AI model, routed through our
+// gateway via the cf-aig-gateway-id header. Needs only the AI Gateway permission.
+export const TEST_MODEL = "@cf/meta/llama-3.1-8b-instruct";
+
+export async function runGatewayTest(token: string, accountId: string) {
+  const res = await fetch(
+    `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/v1/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "cf-aig-gateway-id": GATEWAY_ID,
+      },
+      body: JSON.stringify({
+        model: TEST_MODEL,
+        messages: [{ role: "user", content: "In one short sentence, what does an AI gateway do?" }],
+      }),
+    },
+  );
+  const data: any = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new ApiError("Test request failed", { ok: false, status: res.status, errors: data?.errors });
+  }
+  const answer =
+    data?.choices?.[0]?.message?.content || data?.result?.response || "(no text returned)";
+  return { answer, model: TEST_MODEL };
+}
+
+export async function getGatewayLogs(token: string, accountId: string) {
+  const r = await cf<any[]>(token, "GET", `/accounts/${accountId}/ai-gateway/gateways/${GATEWAY_ID}/logs`);
+  const rows = Array.isArray(r.result) ? r.result : [];
+  rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return rows.slice(0, 5).map((l) => ({
+    model: l.model,
+    provider: l.provider,
+    status_code: l.status_code,
+    success: l.success,
+    cached: l.cached,
+    duration: l.duration,
+    tokens_in: l.tokens_in,
+    tokens_out: l.tokens_out,
+    created_at: l.created_at,
+  }));
+}
+
 // ---- Errors -------------------------------------------------------------
 
 export class ApiError extends Error {
@@ -194,8 +246,10 @@ export class ApiError extends Error {
     super(message);
   }
   toJSON() {
+    const apiMsg = this.detail.errors?.map((e) => e.message).filter(Boolean).join("; ");
     return {
-      error: this.message,
+      // Surface the real Cloudflare API error text so it shows in the UI.
+      error: apiMsg ? `${this.message}: ${apiMsg}` : this.message,
       status: this.detail.status,
       errors: this.detail.errors,
     };

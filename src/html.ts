@@ -91,11 +91,11 @@ export function page(): string {
     <h2>Create and connect your API token</h2>
     <p>One step. We never ask for your account id &mdash; it is detected from the token. Your token stays in this browser tab and is sent only to this Worker to call the Cloudflare API.</p>
     <div class="row" style="margin-bottom:6px">
-      <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%5D" target="_blank" rel="noopener"><button>Open the API token page &rarr;</button></a>
-      <span class="note">Create Token &rarr; Custom Token</span>
+      <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22aig%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ai%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22access%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%5D" target="_blank" rel="noopener"><button>Create token (permissions pre-filled) &rarr;</button></a>
+      <span class="note">Opens the token page with the right permissions already checked.</span>
     </div>
-    <div class="perm">Give it these <b>account</b> permissions:<br/>
-      <code>AI Gateway: Edit</code> &nbsp; <code>Zero Trust: Edit</code> &nbsp; <code>Access: Apps and Policies: Edit</code> &nbsp; <code>Account Settings: Read</code></div>
+    <div class="perm">Just pick <b>Account Resources &rarr; your account</b>, then <b>Continue</b> and <b>Create Token</b>. Pre-selected:<br/>
+      <code>AI Gateway: Edit</code> &nbsp; <code>Workers AI: Edit</code> &nbsp; <code>Access: Apps and Policies: Edit</code> &nbsp; <code>Account Settings: Read</code></div>
     <label class="fld" for="tokenInput">Paste your token</label>
     <textarea id="tokenInput" placeholder="Paste the API token you just created"></textarea>
     <div class="row" style="margin-top:10px">
@@ -111,9 +111,11 @@ export function page(): string {
     <p>Creates a gateway with caching, rate limiting, and full logging. Point any OpenAI / Anthropic / Workers AI app at it by changing one base URL.</p>
     <div class="row">
       <button id="gwBtn" disabled>Deploy AI Gateway</button>
+      <button id="gwTestBtn" class="secondary" disabled>Send a test request</button>
       <a id="gwDash" class="note" target="_blank" rel="noopener" style="display:none">Open in dashboard &rarr;</a>
     </div>
     <div class="out" id="gwOut"></div>
+    <div class="out" id="gwTestOut"></div>
   </div>
 
   <!-- Step 3: MCP Portal -->
@@ -223,6 +225,31 @@ export function page(): string {
       + "<pre>" + curl + "</pre>";
     show("gwOut", h);
     el("gwDash").style.display = "inline";
+    el("gwTestBtn").disabled = false;
+  }
+
+  function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+  el("gwTestBtn").onclick = function(){
+    el("gwTestBtn").disabled = true; show("gwTestOut", "Sending a free Workers AI request through your gateway...");
+    post("/api/test-gateway").then(function(res){
+      el("gwTestBtn").disabled = false;
+      if(res.ok && res.d.ok){ renderTest(res.d); }
+      else { show("gwTestOut", "<span style='color:var(--red)'>" + (res.d.error || "Failed") + "</span>"); }
+    });
+  };
+
+  function renderTest(d){
+    var rows = "";
+    (d.logs || []).forEach(function(l){
+      var meta = (l.status_code||"-") + " · " + ((l.tokens_in||0)+(l.tokens_out||0)) + " tok · " + (l.duration||0) + "ms" + (l.cached ? " · cached" : "");
+      rows += "<div class='kv'><span>" + esc(l.model||"model") + "</span><code>" + meta + "</code></div>";
+    });
+    if(!rows){ rows = "<div class='kv'><span class='note'>Logs not visible yet, click Send a test request again to refresh.</span></div>"; }
+    var h = "<div class='kv'><b>Model</b><code>" + esc(d.model) + "</code></div>"
+      + "<div class='kv'><span>Response</span></div><pre>" + esc(d.answer) + "</pre>"
+      + "<div class='kv'><b>Recent gateway logs</b></div>" + rows;
+    show("gwTestOut", h);
   }
 
   el("mcpBtn").onclick = function(){

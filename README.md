@@ -19,14 +19,18 @@ The deploy flow only creates the Git repo and deploys the Worker. There are no b
 
 ### The API token
 
-Create it at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) &rarr; **Create Token** &rarr; **Custom Token**, with these account permissions:
+The site's **Create token (permissions pre-filled)** button deep-links to the token page with the right permissions already checked, using the dashboard's `permissionGroupKeys` query param. You just pick **Account Resources &rarr; your account** and create. Pre-selected permissions:
 
-- **AI Gateway**: Edit
-- **Zero Trust**: Edit
-- **Access: Apps and Policies**: Edit
-- **Account Settings**: Read
+- **AI Gateway**: Edit (`aig`) &mdash; create the gateway and run the test request
+- **Workers AI**: Edit (`ai`) &mdash; the free test inference
+- **Access: Apps and Policies**: Edit (`access`) &mdash; MCP portal and servers (the `ai-controls` endpoints)
+- **Account Settings**: Read (`account_settings`) &mdash; auto-detect your account id
 
-Set a short TTL and delete it after the demo.
+This prefill works on the user-token page (`/profile/api-tokens`), so the token is user-owned but scoped to your account, which is functionally identical for these calls. Set a short TTL and delete it after the demo.
+
+### Test the gateway
+
+After deploying the gateway, click **Send a test request**. It runs a free Workers AI model through your gateway (unified `/ai/v1/chat/completions` endpoint with the `cf-aig-gateway-id` header), shows the model's answer, then reads the gateway logs so you can see the request was captured (status, tokens, duration, cache).
 
 ### Where the token lives
 
