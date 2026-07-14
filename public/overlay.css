@@ -1,0 +1,253 @@
+/* AI Governance concept overlay. Deliberately NOT in the Cloudflare visual
+   language (violet/teal, dashed) so it is obvious what is the real dashboard
+   and what is the concept layer. */
+
+#gov-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+#gov-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* annotation bubble */
+.gov-bubble {
+  position: absolute;
+  width: 250px;
+  background: #fff;
+  border: 2px dashed #7c3aed;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(76, 29, 149, 0.22);
+  padding: 10px 12px;
+  pointer-events: auto;
+}
+.gov-bubble .gh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #5b21b6;
+  margin-bottom: 4px;
+}
+.gov-bubble .gb {
+  font-size: 12px;
+  color: #3f3f46;
+  line-height: 1.42;
+}
+.gov-bubble .gb b {
+  color: #1f1f22;
+}
+.gov-bubble .tag {
+  margin-left: auto;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  background: #ede9fe;
+  color: #6d28d9;
+  border-radius: 4px;
+  padding: 2px 5px;
+  text-transform: uppercase;
+}
+.gov-bubble.risk {
+  border-color: #dc2626;
+  box-shadow: 0 12px 28px rgba(220, 38, 38, 0.2);
+}
+.gov-bubble.risk .gh {
+  color: #b91c1c;
+}
+.gov-bubble.risk .tag {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.gov-bubble.good {
+  border-color: #059669;
+  box-shadow: 0 12px 28px rgba(5, 150, 105, 0.2);
+}
+.gov-bubble.good .gh {
+  color: #047857;
+}
+.gov-bubble.good .tag {
+  background: #d1fae5;
+  color: #047857;
+}
+.gov-bubble .big {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #047857;
+  line-height: 1.1;
+}
+
+/* faint ring marking the element a bubble refers to */
+.gov-anchor {
+  position: absolute;
+  border: 1.5px dashed #a78bfa;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.gov-anchor.risk {
+  border-color: #f87171;
+}
+
+/* clickable hotspot (where the dummy UI actually works) */
+.gov-hot {
+  position: absolute;
+  border: 2px solid #10b981;
+  border-radius: 9px;
+  background: rgba(16, 185, 129, 0.07);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: govpulse 1.9s infinite;
+}
+.gov-hot .hl {
+  position: absolute;
+  top: -11px;
+  left: 8px;
+  background: #10b981;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+@keyframes govpulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 9px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* control panel */
+#gov-panel {
+  position: fixed;
+  bottom: 18px;
+  right: 16px;
+  z-index: 9600;
+  width: 244px;
+  background: #1c1130;
+  color: #fff;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 16px 40px rgba(20, 8, 40, 0.4);
+  pointer-events: auto;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+#gov-panel .pt {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+#gov-panel .pt .dotv {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #a78bfa;
+}
+#gov-panel .ps {
+  font-size: 11px;
+  color: #c4b5fd;
+  margin: 4px 0 10px;
+  line-height: 1.4;
+}
+#gov-panel .prow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-top: 8px;
+}
+#gov-panel .legend {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 10px;
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+#gov-panel .lg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #ddd6fe;
+}
+#gov-panel .sw {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+#gov-panel .sw.concept {
+  border: 2px dashed #a78bfa;
+}
+#gov-panel .sw.hot {
+  border: 2px solid #10b981;
+  background: rgba(16, 185, 129, 0.15);
+}
+.gov-switch {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: #4c1d95;
+  position: relative;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.gov-switch.on {
+  background: #7c3aed;
+}
+.gov-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.15s;
+}
+.gov-switch.on::after {
+  left: 20px;
+}
+.gov-hidden {
+  display: none !important;
+}
+
+/* Prevent flash of stale/low backdrop numbers on the Analytics tab */
+button[id*="base-ui-"] .text-xl,
+button[id*="base-ui-"] .text-2xl,
+button[id*="base-ui-"] .font-semibold {
+  color: transparent !important;
+  transition: color 0.15s ease-out;
+}
+
+/* Hide original empty recharts SVGs immediately to prevent empty chart flash */
+.recharts-wrapper svg {
+  opacity: 0 !important;
+}
+
+/* Once fully patched, reveal the updated values cleanly */
+body.gov-loaded button[id*="base-ui-"] .text-xl,
+body.gov-loaded button[id*="base-ui-"] .text-2xl,
+body.gov-loaded button[id*="base-ui-"] .font-semibold {
+  color: inherit !important;
+}
+
+
+/* Hide the real dashboard's Canary bug-report widget in the demo backdrops */
+[data-sentry-component="CanaryFeedback"] {
+  display: none !important;
+}

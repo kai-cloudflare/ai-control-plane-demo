@@ -1,0 +1,6 @@
+# Copy this file to `.dev.vars` for local development.
+#
+# DEPLOY_ENV=local unlocks the temporary-account provisioning endpoints, which
+# are disabled in production. In production this value is set to "production"
+# via wrangler.jsonc `vars`.
+DEPLOY_ENV=local

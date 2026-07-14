@@ -1,0 +1,1533 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cloudflare AI Governance &amp; Provisioning Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+      body {
+        background: #fafafa;
+        color: var(--fg);
+        font-family: var(--font);
+      }
+      .portal-wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 60px 24px 100px;
+      }
+      .portal-head {
+        text-align: center;
+        margin-bottom: 44px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 30px;
+      }
+      .portal-head svg {
+        width: 60px;
+        height: auto;
+        margin-bottom: 12px;
+      }
+      .portal-head h1 {
+        font-size: 30px;
+        font-weight: 700;
+        color: var(--fg-strong);
+        margin: 0 0 6px;
+        letter-spacing: -0.5px;
+      }
+      .portal-head p {
+        font-size: 15px;
+        color: var(--muted);
+        margin: 0;
+      }
+      
+      .sec-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 40px 0 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .sec-title {
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+      }
+
+      /* Segmented data-source toggle (Demo vs. Connected account) */
+      .range-toggle {
+        display: inline-flex;
+        padding: 3px;
+        background: #f0f0f2;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        gap: 2px;
+      }
+      .range-btn {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        font-family: var(--font);
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--muted);
+        padding: 7px 15px;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        line-height: 1;
+      }
+      .range-btn:hover {
+        color: var(--fg-strong);
+      }
+      .range-btn.active {
+        background: var(--card);
+        color: var(--fg-strong);
+        box-shadow: 0 1px 2px rgba(15, 15, 20, 0.1), 0 0 0 1px rgba(15, 15, 20, 0.03);
+      }
+      .range-btn .dot-src {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted-2);
+        transition: background 0.18s ease, box-shadow 0.18s ease;
+      }
+      .range-btn.demo.active .dot-src {
+        background: var(--orange);
+        box-shadow: 0 0 0 3px rgba(246, 130, 31, 0.18);
+      }
+      .range-btn.real.active .dot-src {
+        background: var(--green);
+        box-shadow: 0 0 0 3px rgba(24, 169, 87, 0.2);
+      }
+
+      /* Bottom source-switch bar inside Step 3 */
+      .source-switch-bar {
+        margin-top: 22px;
+        border-top: 1px solid var(--border-soft);
+        padding-top: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .source-switch-bar .ssb-copy {
+        font-size: 13px;
+        color: var(--muted);
+        max-width: 340px;
+      }
+      .source-switch-bar .ssb-copy b {
+        color: var(--fg-strong);
+        display: block;
+        margin-bottom: 2px;
+      }
+
+      /* Intro callout under the header */
+      .intro-note {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--orange);
+        border-radius: var(--radius);
+        padding: 15px 18px;
+        margin: 0 0 38px;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--fg);
+      }
+      .intro-note b {
+        color: var(--fg-strong);
+      }
+      .intro-note .il {
+        color: var(--blue-link);
+        text-decoration: none;
+        font-weight: 500;
+      }
+      .intro-note .il:hover {
+        text-decoration: underline;
+      }
+
+      /* Step 3 account-choice cards */
+      .choice-row {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin: 4px 0 22px;
+      }
+      .choice-card {
+        flex: 1;
+        min-width: 220px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 15px 16px;
+        cursor: pointer;
+        background: var(--card);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      }
+      .choice-card:hover {
+        border-color: var(--muted-2);
+      }
+      .choice-card.active {
+        border-color: var(--orange);
+        box-shadow: inset 0 0 0 1px var(--orange);
+        background: #fff8f2;
+      }
+      .choice-card h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        color: var(--fg-strong);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .choice-card p {
+        margin: 0;
+        font-size: 12.5px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+      .choice-badge {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: var(--hover);
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .choice-card.active .choice-badge {
+        background: var(--orange);
+        color: #fff;
+      }
+
+      /* Token-handling reassurance note */
+      .token-note {
+        background: #f0f7f2;
+        border: 1px solid #cfe8d8;
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #2c6b45;
+        line-height: 1.55;
+        margin-top: 10px;
+        display: flex;
+        gap: 9px;
+      }
+      .token-note svg {
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .token-note b {
+        color: #1f5233;
+      }
+
+      /* Temporary-account provisioning progress */
+      .prov-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--fg-strong);
+        margin: 6px 0 4px;
+      }
+      .prov-spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid var(--border);
+        border-top-color: var(--orange);
+        border-radius: 50%;
+        animation: govspin 0.8s linear infinite;
+        flex-shrink: 0;
+      }
+      .prov-check {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--green);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+      @keyframes govspin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Gateway result action buttons (Copy / Live logs / Dashboard) */
+      .gw-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin: 12px 0 8px;
+      }
+      .gw-act {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+        padding: 9px 15px;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      }
+      .gw-act:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(15, 15, 20, 0.12);
+      }
+      .gw-act.primary {
+        background: var(--blue);
+        border-color: var(--blue);
+        color: #fff;
+      }
+      .gw-act.brand {
+        background: var(--orange);
+        border-color: var(--orange);
+        color: #fff;
+      }
+      .gw-act.ghost {
+        background: #fff;
+        color: var(--fg-strong);
+      }
+      .gw-chart-wrap {
+        margin-top: 12px;
+        padding: 12px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+      }
+      .gw-chart-wrap .gw-chart-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      /* Step 1 governance dashboard: grid of always-visible tiles */
+      .tile-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 8px;
+      }
+      .tile {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 20px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.02);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+      .tile:hover {
+        border-color: var(--muted-2);
+        box-shadow: 0 4px 12px rgba(16, 24, 40, 0.06);
+      }
+      .tile.wide {
+        grid-column: 1 / -1;
+      }
+      .tile-q {
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: var(--muted);
+        margin: 0 0 4px;
+      }
+      .qa-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--fg-strong);
+        margin: 2px 0 6px;
+        letter-spacing: -0.5px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .qa-value .unit {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .tile p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0 0 14px;
+        line-height: 1.5;
+      }
+      .tile p:last-child {
+        margin-bottom: 0;
+      }
+      @media (max-width: 640px) {
+        .tile-grid { grid-template-columns: 1fr; }
+        .tile.wide { grid-column: auto; }
+      }
+
+      /* Dynamic-routing mini-map (Step 1 routing tile) — simple + compact */
+      .rt-key {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        background: var(--hover);
+        border: 1px solid var(--border-soft);
+        border-radius: 4px;
+        padding: 0 5px;
+        color: var(--fg-strong);
+      }
+      .rt-diagram {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fcfcfd;
+      }
+      .rt-route {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .rt-cond {
+        flex: 0 0 auto;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 9px;
+        border-radius: 6px;
+        white-space: nowrap;
+      }
+      .rt-cond.true { background: #e6f6ec; color: #1a8f4c; border: 1px solid #b9e3c8; }
+      .rt-cond.false { background: #eef1f6; color: #475569; border: 1px solid #d6dbe4; }
+      .rt-arrow { flex: 0 0 auto; color: var(--muted-2); font-size: 13px; }
+      .rt-model {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--fg-strong);
+        box-shadow: 0 1px 2px rgba(15, 15, 20, 0.04);
+      }
+      .rt-model .rt-sub {
+        font-weight: 500;
+        font-size: 10.5px;
+        color: var(--muted);
+        margin-left: auto;
+        white-space: nowrap;
+      }
+      .rt-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; }
+      .rt-dot.anthropic { background: #d97757; }
+      .rt-dot.cf { background: var(--orange); }
+      .rt-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+      .rt-chip {
+        font-size: 10.5px;
+        color: var(--muted);
+        background: var(--hover);
+        border: 1px solid var(--border-soft);
+        border-radius: 999px;
+        padding: 2px 9px;
+        white-space: nowrap;
+      }
+
+      /* step 2 tour card */
+      .tour-card {
+        background: linear-gradient(120deg, #f5f3ff 0%, #fff 60%);
+        border: 1px solid #ddd6fe;
+        border-radius: var(--radius);
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        text-decoration: none;
+        color: inherit;
+        box-shadow: 0 1px 3px rgba(124, 58, 237, 0.05);
+        cursor: pointer;
+        margin-bottom: 24px;
+      }
+      .tour-card:hover {
+        border-color: #c4b5fd;
+        box-shadow: 0 10px 20px -5px rgba(124, 58, 237, 0.08);
+      }
+      .tour-card h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--fg-strong);
+        margin: 0 0 4px;
+      }
+      .tour-card p {
+        font-size: 13.5px;
+        color: var(--muted);
+        margin: 0;
+        line-height: 1.45;
+      }
+      .tour-card .btn {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: #fff;
+        padding: 9px 16px;
+        font-size: 13.5px;
+        flex: 0 0 auto;
+      }
+      .tour-card .btn:hover {
+        background: #6d28d9;
+      }
+
+      /* step 3 deploy card */
+      .p-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+      }
+      .p-card h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--fg-strong);
+        margin: 0 0 16px;
+      }
+      .p-card p {
+        font-size: 13.5px;
+        color: var(--muted);
+        margin: 0 0 16px;
+        line-height: 1.45;
+      }
+      .p-card .step-num {
+        position: absolute;
+        top: 20px;
+        right: 24px;
+        font-size: 36px;
+        font-weight: 800;
+        color: var(--border-soft);
+        line-height: 1;
+      }
+      .pill-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        background: #fff;
+        border: 1px solid var(--border);
+        margin-left: 12px;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--muted-2);
+      }
+      .dot.ok { background: var(--green); }
+      .dot.warn { background: var(--amber); }
+      .dot.err { background: var(--red); }
+      
+      label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input, textarea {
+        font-family: var(--mono);
+        font-size: 13px;
+        background: #fcfcfd;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        color: var(--fg-strong);
+        width: 100%;
+      }
+      textarea {
+        min-height: 70px;
+        resize: vertical;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .out {
+        margin-top: 14px;
+        background: #fcfcfd;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+        display: none;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        overflow-x: auto;
+      }
+      .out.show {
+        display: block;
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+        color: #3f3f46;
+      }
+      .kv {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 0;
+        border-bottom: 1px dashed var(--border-soft);
+        font-size: 13px;
+      }
+      .kv:last-child {
+        border-bottom: 0;
+      }
+      .kv span {
+        color: var(--muted);
+      }
+      .tag {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        text-transform: uppercase;
+      }
+      .tag.ok {
+        background: var(--green-bg);
+        color: #14663a;
+        border-color: #bfe6cf;
+      }
+      .perm-note {
+        background: #fcfcfd;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      .perm-note code {
+        color: var(--orange);
+        font-family: var(--mono);
+        font-weight: 600;
+      }
+      ul.next {
+        margin: 8px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+      }
+      ul.next li {
+        margin: 6px 0;
+        font-size: 13.5px;
+      }
+      
+      /* auth tabs */
+      .auth-tabs {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #f1f5f9;
+        padding: 3px;
+        margin-bottom: 18px;
+      }
+      .auth-tab {
+        border: 0;
+        background: transparent;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 550;
+        color: var(--muted);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .auth-tab.active {
+        background: #fff;
+        color: var(--fg-strong);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      }
+
+      /* Step 3 vertical wizard: one consistent left rail, all actions left-aligned */
+      .wizard { margin-top: 4px; }
+      .wz-step {
+        position: relative;
+        padding-left: 46px;
+        transition: opacity .2s ease;
+      }
+      .wz-step .wz-body { padding-bottom: 28px; }
+      .wz-step:last-child .wz-body { padding-bottom: 0; }
+      /* connector line linking the number badges */
+      .wz-step::before {
+        content: "";
+        position: absolute;
+        left: 15px;
+        top: 6px;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-soft);
+      }
+      .wz-step:last-child::before { display: none; }
+      .wz-num {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: #fff;
+        color: var(--muted-2);
+        font-weight: 700;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+      }
+      .wz-step.active .wz-num {
+        border-color: var(--orange);
+        color: var(--orange);
+        box-shadow: 0 0 0 4px rgba(243,128,32,0.12);
+      }
+      .wz-step.done .wz-num {
+        border-color: var(--green);
+        background: var(--green);
+        color: #fff;
+      }
+      .wz-step.pending { opacity: 0.5; }
+      .wz-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--fg-strong);
+        margin: 4px 0 5px;
+      }
+      .wz-desc {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0 0 12px;
+        line-height: 1.5;
+      }
+      /* every primary action shares this left-aligned row */
+      .wz-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 12px 0 0;
+      }
+      .wz-actions.stacked { flex-direction: column; align-items: flex-start; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="portal-wrap">
+      <div class="portal-head">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-label="Cloudflare"><path d="M22.012 22.222c.197-.675.122-1.294-.206-1.754-.3-.422-.807-.666-1.416-.694l-11.545-.15c-.075 0-.14-.038-.178-.094s-.047-.13-.028-.206c.038-.113.15-.197.272-.206l11.648-.15c1.38-.066 2.88-1.182 3.404-2.55l.666-1.735a.38.38 0 0 0 .02-.225c-.75-3.395-3.78-5.927-7.4-5.927-3.34 0-6.17 2.157-7.184 5.15-.657-.488-1.5-.75-2.392-.666-1.604.16-2.9 1.444-3.048 3.048a3.58 3.58 0 0 0 .084 1.191A4.84 4.84 0 0 0 0 22.1c0 .234.02.47.047.703.02.113.113.197.225.197H21.58a.29.29 0 0 0 .272-.206l.16-.572z" fill="#f38020"/><path d="M25.688 14.803l-.32.01c-.075 0-.14.056-.17.13l-.45 1.566c-.197.675-.122 1.294.206 1.754.3.422.807.666 1.416.694l2.457.15c.075 0 .14.038.178.094s.047.14.028.206c-.038.113-.15.197-.272.206l-2.56.15c-1.388.066-2.88 1.182-3.404 2.55l-.188.478c-.038.094.028.188.13.188h8.797a.23.23 0 0 0 .225-.169A6.41 6.41 0 0 0 32 21.106a6.32 6.32 0 0 0-6.312-6.302" fill="#faae40"/></svg>
+        <h1>AI Governance &amp; Provisioning Portal</h1>
+        <p>A unified portal to assess compliance, explore controls, and deploy your AI Gateway.</p>
+      </div>
+
+      <div class="intro-note">
+        <b>Real product, sample story.</b> Step&nbsp;1 shows what good AI governance looks like on a fictional company, Step&nbsp;2 tours the real
+        <a class="il" href="https://developers.cloudflare.com/ai-gateway/" target="_blank" rel="noopener">Cloudflare AI Gateway</a>
+        dashboard, and Step&nbsp;3 deploys it on your own account in about a minute. Connect, and Step&nbsp;1 swaps the sample numbers for your live data.
+      </div>
+
+      <!-- Section 1: Executive Insights -->
+      <div class="sec-header">
+        <div class="sec-title">Step 1 · AI Governance Dashboard</div>
+        <div id="dataSourceToggle" class="range-toggle js-source-toggle" style="display:none">
+          <button class="range-btn demo js-demo active"><span class="dot-src"></span>Northwind Retail (Demo)</button>
+          <button class="range-btn real js-real"><span class="dot-src"></span>Your Connected Account</button>
+        </div>
+      </div>
+      <p id="step1Hint" class="muted" style="font-size:12.5px;margin:-4px 0 16px">
+        Sample figures. <a href="#connectCard" class="il" style="color:var(--blue-link);font-weight:500">Connect in Step&nbsp;3</a> to see your own live data here.
+      </p>
+      
+      <div class="tile-grid">
+
+        <!-- Tile 1: DLP leaks blocked -->
+        <div class="tile">
+          <div class="tile-q">Sensitive-data leaks blocked this month</div>
+          <div class="qa-value" id="valDlp">3,687 <span class="unit">confidential exposures prevented</span></div>
+          <p id="descDlp">3,687 attempts to send credentials, source code, financials, and PII to external models were blocked. Unmonitored endpoints are a compliance risk.</p>
+          <div style="height: 180px; position: relative;" id="dlpChartWrap"><canvas id="dlpTypeChart"></canvas></div>
+        </div>
+
+        <!-- Tile 2: Unsafe prompts stopped -->
+        <div class="tile">
+          <div class="tile-q">Unsafe prompts stopped</div>
+          <div class="qa-value" id="valSaf">1,182 <span class="unit">unsafe prompts blocked</span></div>
+          <p id="descSaf">Guardrails blocked 1,182 unsafe prompts before they reached the model: jailbreaks (558), PII (376), hate speech (133), violence (97).</p>
+          <div style="height: 180px; position: relative;" id="safChartWrap"><canvas id="safetyCatChart"></canvas></div>
+        </div>
+
+        <!-- Tile 3: AI spend avoided -->
+        <div class="tile">
+          <div class="tile-q">AI spend avoided</div>
+          <div class="qa-value" id="valBud">$890.82 <span class="unit">saved via automated caching</span></div>
+          <p id="descBud">The support copilot served 37.7% of requests from cache, saving $890. The Returns team hit 95% of its budget, triggering an alert.</p>
+          <div style="height: 180px; position: relative;" id="budChartWrap"><canvas id="budgetChart"></canvas></div>
+        </div>
+
+        <!-- Tile 4: Model resilience & routing (dynamic routing flow) -->
+        <div class="tile">
+          <div class="tile-q">Model resilience &amp; smart routing</div>
+          <div class="qa-value">100% <span class="unit">active fallback resilience</span></div>
+          <p style="margin-bottom:10px"><b>Dynamic Routing</b> splits traffic on <span class="rt-key">usergroup</span>, with a weekly budget and automatic fallback.</p>
+          <div class="rt-diagram">
+            <div class="rt-route">
+              <span class="rt-cond true">C-Level</span>
+              <span class="rt-arrow">&rarr;</span>
+              <span class="rt-model"><span class="rt-dot anthropic"></span>claude-sonnet-4 <span class="rt-sub">Anthropic</span></span>
+            </div>
+            <div class="rt-route">
+              <span class="rt-cond false">Everyone else</span>
+              <span class="rt-arrow">&rarr;</span>
+              <span class="rt-model"><span class="rt-dot cf"></span>kimi <span class="rt-sub">Workers AI</span></span>
+            </div>
+            <div class="rt-meta"><span class="rt-chip">$ 100 USD / week</span><span class="rt-chip">&#8629; auto-fallback</span></div>
+          </div>
+        </div>
+
+        <!-- Tile 5: Response quality -->
+        <div class="tile">
+          <div class="tile-q">AI response quality monitoring</div>
+          <div class="qa-value">91.4% <span class="unit">average response score (evaluated)</span></div>
+          <p>Via the <b>evaluations API</b> (<code>patchLog()</code>), apps capture thumbs up/down and model-as-a-judge scores (0–100) on gateway logs, so we can track prompt drift and response quality.</p>
+        </div>
+
+        <!-- Tile 6: Agentic / MCP auditing -->
+        <div class="tile">
+          <div class="tile-q">Agentic tool &amp; MCP auditing</div>
+          <div class="qa-value">Active <span class="unit">MCP Server Portal logging</span></div>
+          <p>Every tool an AI agent calls is logged in the <b>MCP Server Portal</b>, attributed to a user identity. Outbound agentic requests are scanned by <b>Cloudflare Gateway</b> and <b>DLP</b> to prevent exfiltration.</p>
+        </div>
+
+        <!-- Tile 7 (wide): overall policy coverage & risk matrix -->
+        <div class="tile wide">
+          <div class="tile-q">Overall policy coverage &amp; risk</div>
+          <div class="qa-value" id="valGov">29% <span class="unit">of active AI apps fully governed</span></div>
+          <p id="descGov">Only 2 of 7 sanctioned AI apps have all controls active. 2 High-risk apps (incl. the HR resume screener) run with logging, auth, and DLP off.</p>
+          <div class="panel card-pad-0" style="margin-top:10px" id="covTableWrap">
+            <table>
+              <thead><tr><th>Application</th><th>Risk</th><th style="text-align:center">DLP</th><th style="text-align:center">Guardrails</th><th style="text-align:center">Auth</th><th style="text-align:center">Logging</th></tr></thead>
+              <tbody>
+                <tr><td>northwind-support-copilot</td><td><span class="tier Limited">Limited</span></td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td></tr>
+                <tr><td>checkout-rag-assistant</td><td><span class="tier Limited">Limited</span></td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td></tr>
+                <tr><td>hr-resume-screener</td><td><span class="tier High" style="background:#fdecea;color:var(--red)">High</span></td><td style="text-align:center" class="cross" style="color:var(--red)">✗</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="cross" style="color:var(--red)">✗</td><td style="text-align:center" class="cross" style="color:var(--red)">✗</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Section 2: Product Tour -->
+      <div class="sec-header"><div class="sec-title">Step 2 · Interactive Product Walkthrough</div></div>
+      <a class="tour-card" href="/real/list.html?tour=1">
+        <div>
+          <h2>Explore the real dashboard</h2>
+          <p>A guided tour of the real AI Gateway interface: logs, analytics, guardrails, and dynamic routing.</p>
+        </div>
+        <button class="btn">Start Walkthrough &rarr;</button>
+      </a>
+
+      <!-- Section 3: Provisioning -->
+      <div class="sec-header"><div class="sec-title">Step 3 · Instant Self-Provisioning</div></div>
+      <div class="p-card" id="connectCard">
+        <span class="step-num">3</span>
+        <h2>Deploy AI Gateway on your account <span class="pill-status"><span id="statusDot" class="dot"></span><span id="statusText">Disconnected</span></span></h2>
+        <p>Deploy a live AI Gateway (<code>ai-control-plane-demo</code>) on your account, with budgets, caching, and safety rules pre-configured.</p>
+        
+        <!-- Sign-up helper: a Cloudflare login is needed to deploy (and, locally, to claim the sandbox) -->
+        <div class="perm-note" id="signupHelper" style="background:#fff;border-color:var(--border);margin-bottom:18px;">
+          <span style="font-weight:600;color:var(--fg-strong);display:block;margin-bottom:4px;">New to Cloudflare?</span>
+          <span id="signupHelperText" class="muted" style="font-size:12.5px;display:block;margin-bottom:12px;">A free account takes about a minute, no credit card. AI Gateway and Workers AI are on by default.</span>
+          <a href="https://dash.cloudflare.com/sign-up" target="_blank" rel="noopener"><button class="btn btn-primary" style="background:var(--orange);border-color:var(--orange);color:#fff;padding:6px 12px;font-size:12.5px;">Create a free account &rarr;</button></a>
+        </div>
+
+        <!-- Account choice: existing account vs temporary sandbox (temp is local-only) -->
+        <div class="choice-row" id="choiceRow" style="display:none">
+          <div class="choice-card active" id="choiceExisting" role="button" tabindex="0">
+            <h4>Use my Cloudflare account <span class="choice-badge">Recommended</span></h4>
+            <p>Connect a scoped API token and deploy on your own account.</p>
+          </div>
+          <div class="choice-card" id="choiceTemp" role="button" tabindex="0" style="display:none">
+            <h4>Create a temporary sandbox <span class="choice-badge">Local demo</span></h4>
+            <p>Spin up a fresh preview account. You claim it into a Cloudflare login, and it stays there as a normal account.</p>
+          </div>
+        </div>
+
+        <!-- Temporary-account provisioning (local laptop only) -->
+        <div id="panelTemp" style="display:none;margin-bottom:18px">
+          <button class="btn btn-primary" id="tempCreateBtn" style="background:var(--orange);border-color:var(--orange);color:#fff">Create temporary account &rarr;</button>
+          <div id="tempProgress" style="display:none;margin-top:14px">
+            <div class="prov-status"><span id="tempSpin" class="prov-spinner"></span><span id="tempStatusText">Creating your sandbox account...</span></div>
+
+            <!-- Prominent claim call-to-action -->
+            <div id="tempClaimBox" style="display:none;border:1px solid var(--orange);background:#fff8f2;border-radius:var(--radius);padding:15px 16px;margin-top:14px">
+              <div style="font-weight:700;color:var(--fg-strong);font-size:14px;margin-bottom:6px;display:flex;align-items:center;gap:8px">
+                <span style="display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--orange);color:#fff;align-items:center;justify-content:center;font-size:12px">!</span>
+                Action required: claim this account
+              </div>
+              <p class="muted" style="font-size:13px;margin:0 0 12px;line-height:1.55">
+                Your preview account <b id="tempAcctName"></b> has been created but is <b>inactive until you claim it</b>.
+                Open the link below and sign in with a Cloudflare account (your own production login) to attach the sandbox.
+                Only after claiming can you create a token and use AI Gateway.
+              </p>
+              <a id="tempClaimLink" href="#" target="_blank" rel="noopener"><button class="btn btn-primary" style="background:var(--orange);border-color:var(--orange);color:#fff;padding:9px 16px;font-size:13.5px;font-weight:600">Claim account in Cloudflare &rarr;</button></a>
+              <button class="btn" id="tempClaimedBtn" style="margin-left:8px;padding:9px 16px;font-size:13.5px">I've claimed it, continue &rarr;</button>
+            </div>
+
+            <p class="muted" style="font-size:12.5px;margin:10px 0 0">Once the account shows up in your Cloudflare dashboard, click <b>continue</b> above. <span id="tempElapsed"></span></p>
+          </div>
+        </div>
+
+        <!-- Guided connect wizard: one left rail, every action left-aligned, clear progress -->
+        <div class="wizard" id="connectWizard">
+
+          <!-- Steps 1 & 2 grouped so the temp-sandbox path can reveal them together -->
+          <div id="tokenBlock">
+
+            <!-- Step 1: create a scoped token -->
+            <div class="wz-step active" id="wzToken">
+              <div class="wz-num">1</div>
+              <div class="wz-body">
+                <div class="wz-title">Create a scoped API token</div>
+                <p class="wz-desc">Opens Cloudflare with just the permissions this portal needs pre-selected.</p>
+                <p id="tokenIntro" class="muted" style="display:none;font-size:13px;margin:0 0 12px"></p>
+                <div class="wz-actions">
+                  <a id="tokenLink" href="#" target="_blank" rel="noopener"><button class="btn btn-primary" style="padding:8px 14px">Create scoped token &rarr;</button></a>
+                </div>
+                <div class="perm-note" style="margin-top:14px">
+                  Requests only: <code>AI Gateway Read/Edit</code> · <code>Workers AI Read/Edit</code>.
+                  <br/><span class="muted" style="font-size:12px">Set a 1-day expiry on the token screen to auto-clean.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: paste the token and connect -->
+            <div class="wz-step" id="wzConnect">
+              <div class="wz-num">2</div>
+              <div class="wz-body">
+                <div class="wz-title">Paste your token and connect</div>
+                <p class="wz-desc">We verify it, resolve your account, and unlock deployment.</p>
+                <label for="tokenInput">API Token</label>
+                <textarea id="tokenInput" placeholder="Paste your API token here..." style="font-family:var(--mono)"></textarea>
+                <div class="token-note">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2c6b45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <span><b>Your token stays private.</b> Kept in this tab's memory only, sent over HTTPS to run your actions. Never stored, logged, or written to disk. Close the tab and it's gone.</span>
+                </div>
+                <p class="muted" style="font-size:12px;margin:10px 0 0;line-height:1.55">
+                  Rather not paste a key here? It's <a class="il" href="https://github.com/kai-cloudflare/ai-control-plane-demo" target="_blank" rel="noopener" style="color:var(--blue-link);font-weight:500">open source</a>, run it yourself locally and your token never leaves your machine.
+                </p>
+                <div class="wz-actions">
+                  <button class="btn btn-primary" id="connectBtn">Connect Account</button>
+                  <span class="muted" id="connectMsg" style="font-size:13px"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: deploy the gateway + rules -->
+          <div class="wz-step pending" id="stepGateway">
+            <div class="wz-num">3</div>
+            <div class="wz-body">
+              <div class="wz-title">Deploy AI Gateway &amp; governance rules</div>
+              <p class="wz-desc">Creates a gateway with caching, budget rate limits, and prompt logging, live immediately.</p>
+              <div class="wz-actions">
+                <button class="btn btn-primary" id="gwBtn" disabled>Deploy Gateway + Rules</button>
+                <button class="btn secondary" id="gwTestBtn" disabled>Send test requests (builds traffic)</button>
+              </div>
+              <div class="out" id="gwOut"></div>
+              <div class="out" id="gwTestOut"></div>
+            </div>
+          </div>
+
+          <!-- Step 4: view live data (flips Step 1's dashboard) -->
+          <div class="wz-step pending" id="sourceSwitchBar">
+            <div class="wz-num">4</div>
+            <div class="wz-body">
+              <div class="wz-title">View your live governance data</div>
+              <p class="wz-desc">Flip Step 1 between the sample story and your live account.</p>
+              <div class="wz-actions">
+                <div class="range-toggle js-source-toggle">
+                  <button class="range-btn demo js-demo active" disabled><span class="dot-src"></span>Northwind Retail (Demo)</button>
+                  <button class="range-btn real js-real" disabled><span class="dot-src"></span>Your Connected Account</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="stepPoc" style="display:none;margin-top:20px;border-top:1px solid var(--border-soft);padding-top:20px">
+          <h3 style="margin-top:0">Step 4 &middot; Take it to production with your account team</h3>
+          <p class="muted" style="font-size:13.5px">Your baselines are live. To populate Step 1 with real production traffic, a guided rollout adds:</p>
+          <ul class="next">
+            <li>Bridging your production gateways (with your Cloudflare SE).</li>
+            <li>Enterprise PII/secrets redaction via <b>DLP</b>.</li>
+            <li>Budget chargeback rules and SSO auditing.</li>
+          </ul>
+          <p class="muted" style="font-size:13.5px;margin-top:16px">To plan this rollout, reach out to your <b>Cloudflare account team</b>, or reply to whoever shared this portal with you. They can scope a guided proof of concept against your real workloads.</p>
+        </div>
+      </div>
+
+      <hr style="border:0;border-top:1px solid var(--border);margin:48px 0"/>
+      <div class="row" id="cleanupRow" style="display:none">
+        <button class="btn secondary" id="cleanupBtn">Clean up (remove all demo assets)</button>
+        <span class="muted" id="cleanupMsg" style="font-size:13px"></span>
+      </div>
+    </div>
+
+    <!-- Inline script for provisioning flow -->
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        // Token is kept in memory only for this tab session; never persisted.
+        var token = "";
+        var account = null;
+        var realLogs = [];
+        var tempToken = "", tempAccountId = "";
+
+        function el(id){ return document.getElementById(id); }
+        function setStatus(cls, text){ el("statusDot").className = "dot " + cls; el("statusText").textContent = text; }
+        function show(id, html){ var o = el(id); o.innerHTML = html; o.className = "out show"; }
+        function dashLink(a, sub){ a.href = "https://dash.cloudflare.com/?to=/:account" + sub; a.style.display = "inline"; }
+
+        function body(extra){
+          var b = { token: token };
+          if(extra){ for(var k in extra){ b[k] = extra[k]; } }
+          return JSON.stringify(b);
+        }
+        function post(path, extra){
+          return fetch(path, { method:"POST", headers:{ "content-type":"application/json" }, body: body(extra) })
+            .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); });
+        }
+
+        // Wizard step state: 'active' (current), 'done' (completed), 'pending' (upcoming, dimmed)
+        function setStep(id, state){
+          var e = el(id); if(!e) return;
+          e.classList.remove("active", "done", "pending");
+          if(state){ e.classList.add(state); }
+        }
+        function setSourceToggleEnabled(on){
+          el("sourceSwitchBar").querySelectorAll(".range-btn").forEach(function(b){ b.disabled = !on; });
+        }
+
+        function unlock(){
+          setStep("stepGateway", "active");
+          el("gwBtn").disabled = false;
+          el("cleanupRow").style.display = "flex";
+        }
+
+        function onConnected(d){
+          account = d.account;
+          setStatus("ok", "Connected: " + account.name);
+          el("connectMsg").textContent = "Connected as " + account.name + ".";
+          // Steps 1 & 2 are complete; light up the deploy and live-data steps.
+          setStep("wzToken", "done");
+          setStep("wzConnect", "done");
+          unlock();
+          setStep("sourceSwitchBar", "active");
+          setSourceToggleEnabled(true);
+          el("dataSourceToggle").style.display = "inline-flex";
+          el("step1Hint").style.display = "none";
+          // Default Step 1 to the freshly connected account (user can flip back to the demo).
+          switchToReal();
+          if(d.gateway){ 
+            renderGateway({ endpoint:d.gateway.endpoint, created:false }); 
+            // check for existing logs on load to enable real data toggle
+            fetchGatewayLogs();
+          }
+        }
+
+        function connect(silent){
+          if(!token){ return; }
+          if(!silent){ el("connectMsg").textContent = "Connecting..."; }
+          post("/api/connect").then(function(res){
+            if(res.ok && res.d.ok){ onConnected(res.d); }
+            else { el("connectMsg").textContent = (res.d.error || "Failed."); if(!silent){ token=""; } }
+          });
+        }
+
+        el("connectBtn").onclick = function(){
+          var t = el("tokenInput").value.trim();
+          if(!t){ el("connectMsg").textContent = "Paste a token first."; return; }
+          token = t; connect(false);
+        };
+
+        // --- Scoped token deep-link (only the permissions the portal actually uses) ---
+        // AI Gateway Read+Edit: create/delete the gateway and read its logs.
+        // Workers AI Read+Edit: run the test inference requests (Cloudflare docs require both).
+        // Expiry cannot be pre-filled via the URL, so the user sets it on the token screen.
+        function buildTokenLink(){
+          var perms = [
+            { key: "aig", type: "read" },
+            { key: "aig", type: "edit" },
+            { key: "ai", type: "read" },
+            { key: "ai", type: "edit" }
+          ];
+          return "https://dash.cloudflare.com/?to=/:account/api-tokens?permissionGroupKeys="
+            + encodeURIComponent(JSON.stringify(perms))
+            + "&name=" + encodeURIComponent("AI Governance Portal");
+        }
+        el("tokenLink").href = buildTokenLink();
+
+        // --- Account choice: existing vs temporary sandbox ---
+        var tempReady = false, tempTimer = null, tempStart = 0;
+
+        function setMode(mode){
+          var existing = mode === "existing";
+          el("choiceExisting").classList.toggle("active", existing);
+          el("choiceTemp").classList.toggle("active", !existing);
+          el("panelTemp").style.display = existing ? "none" : "block";
+          // A Cloudflare login is required either way (even to claim the sandbox), so keep the helper visible in both modes.
+          el("signupHelper").style.display = "block";
+          // In temp mode the connect wizard stays hidden until the sandbox is ready.
+          el("connectWizard").style.display = existing ? "block" : (tempReady ? "block" : "none");
+        }
+        el("choiceExisting").onclick = function(){ setMode("existing"); };
+        el("choiceTemp").onclick = function(){ setMode("temp"); };
+
+        // Only offer the temporary-account option when running locally.
+        fetch("/api/config").then(function(r){ return r.json(); }).then(function(c){
+          if(c && c.tempAccountsEnabled){
+            el("choiceRow").style.display = "flex";
+            el("choiceTemp").style.display = "block";
+            el("signupHelperText").textContent = "A free account takes about a minute, no card. You'll also need a Cloudflare login to claim the sandbox below, so it's handy either way.";
+          }
+        }).catch(function(){});
+
+        function fmtElapsed(){
+          var s = Math.floor((Date.now() - tempStart) / 1000);
+          var m = Math.floor(s / 60); s = s % 60;
+          return "Elapsed " + m + "m " + (s < 10 ? "0" : "") + s + "s.";
+        }
+
+        el("tempCreateBtn").onclick = function(){
+          el("tempCreateBtn").disabled = true;
+          el("tempProgress").style.display = "block";
+          el("tempStatusText").textContent = "Creating your sandbox account...";
+          fetch("/api/provision-temp-account", { method:"POST", headers:{ "content-type":"application/json" }, body:"{}" })
+            .then(function(r){ return r.json().then(function(d){ return { ok:r.ok, d:d }; }); })
+            .then(function(res){
+              if(!res.ok || !res.d.ok){
+                el("tempSpin").className = "prov-check"; el("tempSpin").style.background = "var(--red)"; el("tempSpin").textContent = "!";
+                el("tempStatusText").textContent = (res.d.error || "Provisioning failed.");
+                el("tempCreateBtn").disabled = false;
+                return;
+              }
+              tempToken = res.d.apiToken; tempAccountId = res.d.accountId;
+              el("tempStatusText").textContent = "Sandbox \u201c" + (res.d.accountName || "account") + "\u201d created. Claim it below, then click continue.";
+              el("tempAcctName").textContent = res.d.accountName || "your sandbox";
+              if(res.d.claimUrl){ el("tempClaimLink").href = res.d.claimUrl; }
+              el("tempClaimBox").style.display = "block";
+              tempStart = Date.now();
+              pollTemp();
+              tempTimer = setInterval(pollTemp, 10000);
+            })
+            .catch(function(e){ el("tempStatusText").textContent = "Network error: " + e; el("tempCreateBtn").disabled = false; });
+        };
+
+        // The provisioning token can't authenticate against AI Gateway, so the readiness
+        // probe never confirms. Let the user proceed manually once they've claimed the account.
+        el("tempClaimedBtn").onclick = function(){ tempBecomeReady(); };
+
+        function pollTemp(){
+          el("tempElapsed").textContent = fmtElapsed();
+          var elapsed = Date.now() - tempStart;
+          fetch("/api/temp-status", { method:"POST", headers:{ "content-type":"application/json" }, body: JSON.stringify({ token: tempToken, accountId: tempAccountId }) })
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+              if(d && d.ready){ tempBecomeReady(); }
+              else if(elapsed > 5*60*1000){ tempBecomeReady(); }
+            })
+            .catch(function(){ if(elapsed > 5*60*1000){ tempBecomeReady(); } });
+        }
+
+        function tempBecomeReady(){
+          if(tempReady) return;
+          tempReady = true;
+          if(tempTimer){ clearInterval(tempTimer); tempTimer = null; }
+          var spin = el("tempSpin"); spin.className = "prov-check"; spin.textContent = "\u2713";
+          el("tempStatusText").textContent = "Your sandbox account is ready.";
+          el("tempElapsed").textContent = "";
+          el("connectWizard").style.display = "block";
+          el("tokenIntro").style.display = "block";
+          el("tokenIntro").innerHTML = "<b>Almost there.</b> Claim your sandbox with the link above, then create a scoped token inside it and paste it below to deploy your gateway.";
+          el("connectWizard").scrollIntoView({ behavior:"smooth", block:"center" });
+        }
+
+        el("gwBtn").onclick = function(){
+          el("gwBtn").disabled = true; show("gwOut", "Creating AI Gateway with budget limits, logging, and caching rules...");
+          post("/api/deploy-gateway").then(function(res){
+            el("gwBtn").disabled = false;
+            if(res.ok && res.d.ok){ renderGateway(res.d); }
+            else { show("gwOut", "<span style='color:var(--red)'>" + (res.d.error || "Failed") + "</span>"); }
+          });
+        };
+
+        function renderGateway(d){
+          var ep = d.endpoint;
+          var curl = "curl " + ep + "/openai/chat/completions \\\n"
+            + "  -H \"Authorization: Bearer $OPENAI_API_KEY\" \\\n"
+            + "  -H \"Content-Type: application/json\" \\\n"
+            + "  -d '{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":\"hello\"}]}'";
+          var logsUrl = "https://dash.cloudflare.com/?to=/:account/ai/ai-gateway/gateways/ai-control-plane-demo/logs";
+          var dashUrl = "https://dash.cloudflare.com/?to=/:account/ai/ai-gateway/gateways/ai-control-plane-demo";
+          var h = "<div class='kv'><b>AI Gateway</b><span class='tag ok'>" + (d.created ? "created" : "ready") + "</span></div>"
+            + "<div class='kv'><span>Endpoint</span></div>"
+            + "<pre>" + ep + "</pre>"
+            + "<div class='kv'><span>Test call (swap in your key)</span></div>"
+            + "<pre>" + curl + "</pre>"
+            + "<div class='kv'><b>Three ways to go deeper</b></div>"
+            + "<div class='gw-actions'>"
+            +   "<button class='gw-act ghost' onclick=\"cp('" + ep + "',this)\">Copy endpoint</button>"
+            +   "<a class='gw-act primary' target='_blank' rel='noopener' href='" + logsUrl + "'>Live logs view &rarr;</a>"
+            +   "<a class='gw-act brand' target='_blank' rel='noopener' href='" + dashUrl + "'>Open gateway dashboard &rarr;</a>"
+            + "</div>"
+            + "<p class='muted' style='font-size:12px;margin:2px 0 0'>Copy the endpoint to call it from your app, open the <b>live logs</b> to watch requests stream in, or open the full <b>gateway dashboard</b> for analytics.</p>";
+          show("gwOut", h);
+          el("gwTestBtn").disabled = false;
+          setStep("stepGateway", "done");
+          el("stepPoc").style.display = "block";
+        }
+
+        el("gwTestBtn").onclick = function(){
+          el("gwTestBtn").disabled = true; show("gwTestOut", "Sending a free test request through your gateway...");
+          post("/api/test-gateway").then(function(res){
+            el("gwTestBtn").disabled = false;
+            if(res.ok && res.d.ok){ 
+              renderTest(res.d);
+              fetchGatewayLogs(); // pull latest logs to sync Step 1
+            }
+            else { show("gwTestOut", "<span style='color:var(--red)'>" + (res.d.error || "Failed") + "</span>"); }
+          });
+        };
+
+        function renderTest(d){
+          var logs = d.logs || [];
+          var rows = "";
+          logs.forEach(function(l){
+            var meta = (l.status_code||"-") + " · " + ((l.tokens_in||0)+(l.tokens_out||0)) + " tok · " + (l.duration||0) + "ms" + (l.cached ? " · cached" : "");
+            rows += "<div class='kv'><span>" + esc(l.model||"model") + "</span><code>" + meta + "</code></div>";
+          });
+          var chartBlock = "";
+          if(logs.length){
+            chartBlock = "<div class='gw-chart-wrap'><div class='gw-chart-title'>Tokens per request &middot; last " + logs.length + " (green = served from cache)</div><div style='height:120px;position:relative'><canvas id='gwTestChartCanvas'></canvas></div></div>";
+          }
+          if(!rows){ rows = "<div class='kv'><span class='muted'>Logs are propagating. Click the test button again to refresh logs.</span></div>"; }
+          var h = "<div class='kv'><b>Model used</b><code>" + esc(d.model) + "</code></div>"
+            + "<div class='kv'><span>Response returned</span></div><pre>" + esc(d.answer) + "</pre>"
+            + chartBlock
+            + "<div class='kv'><b>Recent gateway logs in your dashboard</b></div>" + rows;
+          show("gwTestOut", h);
+          if(logs.length){ drawTestChart(logs); }
+        }
+
+        function drawTestChart(logs){
+          var ctx = document.getElementById("gwTestChartCanvas");
+          if(!ctx || typeof Chart === "undefined") return;
+          var data = logs.slice().reverse(); // oldest -> newest, left to right
+          var labels = data.map(function(_, i){ return "#" + (i + 1); });
+          var totals = data.map(function(l){ return (l.tokens_in||0) + (l.tokens_out||0); });
+          var colors = data.map(function(l){ return l.cached ? "#18a957" : "#4a7ef0"; });
+          if(window.gwTestChartInstance){ window.gwTestChartInstance.destroy(); }
+          window.gwTestChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: { labels: labels, datasets: [{ label: "Tokens", data: totals, backgroundColor: colors, borderRadius: 3, maxBarThickness: 46 }] },
+            options: {
+              responsive: true, maintainAspectRatio: false, animation: { duration: 500 },
+              plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: function(c){ var l = data[c.dataIndex]; return (l.tokens_in||0) + " in + " + (l.tokens_out||0) + " out tok \u00b7 " + (l.duration||0) + "ms" + (l.cached ? " \u00b7 cached" : ""); } } }
+              },
+              scales: {
+                x: { grid: { display: false }, ticks: { font: { size: 9 }, color: "#a1a1aa" } },
+                y: { beginAtZero: true, grid: { color: "#f0f0f2" }, ticks: { font: { size: 9 }, color: "#a1a1aa" } }
+              }
+            }
+          });
+        }
+
+        function fetchGatewayLogs() {
+          // Poll for recent logs and sync with Step 1 without triggering test requests
+          post("/api/real-logs").then(function(res){
+            if (res.ok && res.d.logs) {
+              realLogs = res.d.logs;
+              if (activeSource === "real") syncRealData();
+            }
+          });
+        }
+
+        el("cleanupBtn").onclick = function(){
+          el("cleanupBtn").disabled = true; el("cleanupMsg").textContent = "Deleting...";
+          post("/api/cleanup").then(function(res){
+            el("cleanupBtn").disabled = false;
+            if(res.ok && res.d.ok){
+              el("cleanupMsg").textContent = "Done. Gateway removed.";
+              el("gwOut").className = "out"; el("gwTestOut").className = "out";
+              el("dataSourceToggle").style.display = "none";
+              el("step1Hint").style.display = "block";
+              // Reset the wizard back to its starting state.
+              setStep("wzToken", "active");
+              setStep("wzConnect", null);
+              setStep("stepGateway", "pending");
+              setStep("sourceSwitchBar", "pending");
+              el("gwBtn").disabled = true;
+              el("gwTestBtn").disabled = true;
+              setSourceToggleEnabled(false);
+              el("stepPoc").style.display = "none";
+              el("cleanupRow").style.display = "none";
+              el("connectMsg").textContent = "";
+              setStatus("", "Disconnected");
+              token = "";
+              switchToDemo();
+            } else { el("cleanupMsg").textContent = (res.d.error || "Failed"); }
+          });
+        };
+
+        function cp(text, btn){
+          navigator.clipboard.writeText(text).then(function(){ var o = btn.textContent; btn.textContent = "Copied"; setTimeout(function(){ btn.textContent = o; }, 1200); });
+        }
+        window.cp = cp;
+        function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+        // --- Data Source Sync State Machine ---
+        var activeSource = "demo";
+        function scrollToStep1(){
+          var t = document.querySelector(".sec-header");
+          if(t){ t.scrollIntoView({ behavior:"smooth", block:"start" }); }
+        }
+        // Top toggle (already sitting next to Step 1) — switch in place.
+        el("dataSourceToggle").querySelector(".js-demo").onclick = switchToDemo;
+        el("dataSourceToggle").querySelector(".js-real").onclick = switchToReal;
+        // Bottom toggle (down at Step 3) — switch, then glide up to the refreshed dashboard.
+        el("sourceSwitchBar").querySelector(".js-demo").onclick = function(){ switchToDemo(); scrollToStep1(); };
+        el("sourceSwitchBar").querySelector(".js-real").onclick = function(){ switchToReal(); scrollToStep1(); };
+
+        function setActiveToggle(src){
+          document.querySelectorAll(".js-demo").forEach(function(b){ b.classList.toggle("active", src === "demo"); });
+          document.querySelectorAll(".js-real").forEach(function(b){ b.classList.toggle("active", src === "real"); });
+        }
+
+        function switchToDemo() {
+          activeSource = "demo";
+          setActiveToggle("demo");
+          
+          // Restore static demo metrics
+          el("valDlp").innerHTML = `3,687 <span class="unit">confidential exposures prevented</span>`;
+          el("descDlp").textContent = "3,687 attempts to send credentials, source code, financials, and PII to external models were blocked. Unmonitored endpoints are a compliance risk.";
+          el("valSaf").innerHTML = `1,182 <span class="unit">unsafe prompts blocked</span>`;
+          el("descSaf").textContent = "Guardrails blocked 1,182 unsafe prompts before they reached the model: jailbreaks (558), PII (376), hate speech (133), violence (97).";
+          el("valGov").innerHTML = `29% <span class="unit">of active AI apps fully governed</span>`;
+          el("descGov").textContent = "Only 2 of 7 sanctioned AI apps have all controls active. 2 High-risk apps (incl. the HR resume screener) run with logging, auth, and DLP off.";
+          el("valBud").innerHTML = `$890.82 <span class="unit">saved via automated caching</span>`;
+          el("descBud").textContent = "The support copilot served 37.7% of requests from cache, saving $890. The Returns team hit 95% of its budget, triggering an alert.";
+          
+          // Restore original static matrix table
+          el("covTableWrap").innerHTML = `<table>
+              <thead><tr><th>Application</th><th>Risk</th><th style="text-align:center">DLP</th><th style="text-align:center">Guardrails</th><th style="text-align:center">Auth</th><th style="text-align:center">Logging</th></tr></thead>
+              <tbody>
+                <tr><td>northwind-support-copilot</td><td><span class="tier Limited">Limited</span></td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td></tr>
+                <tr><td>checkout-rag-assistant</td><td><span class="tier Limited">Limited</span></td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="chk">✓</td></tr>
+                <tr><td>hr-resume-screener</td><td><span class="tier High" style="background:#fdecea;color:var(--red)">High</span></td><td style="text-align:center" class="cross" style="color:var(--red)">✗</td><td style="text-align:center" class="chk">✓</td><td style="text-align:center" class="cross" style="color:var(--red)">✗</td><td style="text-align:center" class="cross" style="color:var(--red)">✗</td></tr>
+              </tbody>
+            </table>`;
+
+          // Restore demo chart datasets
+          if (window.dlpChart) {
+            window.dlpChart.data.datasets[0].data = [1253, 848, 590, 479, 331, 184];
+            window.dlpChart.update();
+          }
+          if (window.safetyChart) {
+            window.safetyChart.data.datasets[0].data = [558, 376, 133, 97, 414];
+            window.safetyChart.update();
+          }
+          if (window.budgetChart) {
+            window.budgetChart.data.labels = ["Tier-1 Support", "Escalations", "Returns"];
+            window.budgetChart.data.datasets[0].data = [1067, 1287, 2375];
+            window.budgetChart.data.datasets[0].label = "Spent ($)";
+            window.budgetChart.data.datasets[1].data = [6000, 7500, 2500];
+            window.budgetChart.data.datasets[1].label = "Budget ($)";
+            window.budgetChart.update();
+          }
+          
+          el("dlpChartWrap").style.display = "block"; el("safChartWrap").style.display = "block"; el("budChartWrap").style.display = "block"; el("covTableWrap").style.display = "block";
+        }
+
+        function switchToReal() {
+          activeSource = "real";
+          setActiveToggle("real");
+          syncRealData();
+        }
+
+        function syncRealData() {
+          if (!realLogs || realLogs.length === 0) {
+            el("valDlp").innerHTML = `0 <span class="unit">logs populated</span>`;
+            el("descDlp").innerHTML = `<span style="color:var(--orange2)"><b>Your connected account has no gateway traffic yet.</b></span> Send a few test requests under Step 3b to watch these live graphs and metrics update in real-time!`;
+            el("valSaf").innerHTML = `0`; el("descSaf").textContent = "No prompt scans logged yet.";
+            el("valGov").innerHTML = `100% <span class="unit">fully governed</span>`; el("descGov").textContent = "Your newly provisioned gateway (ai-control-plane-demo) is currently running with logging, caching, and rate limiting 100% active.";
+            el("valBud").innerHTML = `$0.00`; el("descBud").textContent = "No cached queries recorded yet.";
+            
+            // zero out charts
+            if (window.dlpChart) { window.dlpChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0]; window.dlpChart.update(); }
+            if (window.safetyChart) { window.safetyChart.data.datasets[0].data = [0, 0, 0, 0, 0]; window.safetyChart.update(); }
+            if (window.budgetChart) {
+              window.budgetChart.data.labels = ["ai-control-plane-demo"];
+              window.budgetChart.data.datasets[0].data = [0]; window.budgetChart.data.datasets[0].label = "Spent ($)";
+              window.budgetChart.data.datasets[1].data = [10]; window.budgetChart.data.datasets[1].label = "Limit ($)";
+              window.budgetChart.update();
+            }
+
+            el("dlpChartWrap").style.display = "block"; el("safChartWrap").style.display = "block"; el("budChartWrap").style.display = "block"; el("covTableWrap").style.display = "none";
+            return;
+          }
+
+          const reqs = realLogs.length;
+          const cached = realLogs.filter(l => l.cached).length;
+          const tokens = realLogs.reduce((acc, l) => acc + (l.tokens_in || 0) + (l.tokens_out || 0), 0);
+          
+          // Cost estimate based on standard llama-3.2 model list rates (~0.15$ per 1M)
+          const estCost = (tokens / 1e6) * 0.15;
+          const savedCost = (cached * 350 / 1e6) * 0.15;
+
+          el("valDlp").innerHTML = `${reqs} <span class="unit">live requests captured</span>`;
+          el("descDlp").innerHTML = `<b>Real-time data synchronized.</b> All Step 1 metrics are now displaying live telemetry from your <code>ai-control-plane-demo</code> gateway on your Cloudflare account.`;
+          
+          el("valSaf").innerHTML = `${tokens.toLocaleString()} <span class="unit">total tokens processed</span>`;
+          el("descSaf").textContent = `Monitored cumulative token ingestion across all active test runs. 0 guardrail blocks triggered during safe testing.`;
+
+          el("valGov").innerHTML = `100% <span class="unit">policy compliance</span>`;
+          el("descGov").innerHTML = `Your provisioned gateway has all core controls configured: <b>caching</b>, <b>logging</b>, and <b>rate limiting</b> are currently fully active.`;
+
+          el("valBud").innerHTML = `$${estCost.toFixed(5)} <span class="unit">total provider cost</span>`;
+          el("descBud").textContent = `${cached} queries served from cache, avoiding $${savedCost.toFixed(5)} in estimated billing.`;
+
+          // render a real-time table of their actual logs in place of the static matrix!
+          el("covTableWrap").style.display = "block";
+          let tableHtml = `<table>
+            <thead><tr><th>Time</th><th>Model</th><th>Status</th><th style="text-align:center">Cached</th><th style="text-align:right">Tokens</th></tr></thead>
+            <tbody>`;
+          realLogs.forEach(l => {
+            const time = new Date(l.created_at).toLocaleTimeString();
+            tableHtml += `<tr>
+              <td class="muted">${time}</td>
+              <td class="mono" style="font-size:11px">${l.model.split('/').pop()}</td>
+              <td><span class="statusbadge ok">${l.status_code}</span></td>
+              <td style="text-align:center">${l.cached ? '<span class="chk">✓</span>' : '<span class="cross">✗</span>'}</td>
+              <td style="text-align:right" class="mono">${(l.tokens_in||0)+(l.tokens_out||0)}</td>
+            </tr>`;
+          });
+          tableHtml += `</tbody></table>`;
+          el("covTableWrap").innerHTML = tableHtml;
+
+          // Update charts with real-time test run metrics!
+          if (window.dlpChart) {
+            window.dlpChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0]; // no DLP violations during test
+            window.dlpChart.update();
+          }
+          if (window.safetyChart) {
+            window.safetyChart.data.datasets[0].data = [0, 0, 0, 0, 0]; // no safety violations during test
+            window.safetyChart.update();
+          }
+          if (window.budgetChart) {
+            window.budgetChart.data.labels = ["ai-control-plane-demo"];
+            window.budgetChart.data.datasets[0].data = [estCost];
+            window.budgetChart.data.datasets[0].label = "Real spent ($)";
+            window.budgetChart.data.datasets[1].data = [10.00]; // 10$ demo limit
+            window.budgetChart.data.datasets[1].label = "Demo limit ($)";
+            window.budgetChart.update();
+          }
+
+          el("dlpChartWrap").style.display = "block"; el("safChartWrap").style.display = "block"; el("budChartWrap").style.display = "block";
+        }
+      });
+    </script>
+
+    <!-- Render charts in spoilers -->
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        const dlpCtx = document.getElementById("dlpTypeChart");
+        window.dlpChart = new Chart(dlpCtx, {
+          type: "bar",
+          data: {
+            labels: ["PII", "Financial", "Secrets", "Source code", "Customer info", "Health (PHI)"],
+            datasets: [{ data: [1253, 848, 590, 479, 331, 184], backgroundColor: ["#d92d20", "#f6821f", "#8a7cf0", "#d98c00", "#4a7ef0", "#14b8a6"] }]
+          },
+          options: {
+            indexAxis: "y", responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: true }, ticks: { font: { size: 9 }, color: "#a1a1aa" } }, y: { grid: { display: false }, ticks: { font: { size: 9 }, color: "#52525b" } } }
+          }
+        });
+
+        const safCtx = document.getElementById("safetyCatChart");
+        window.safetyChart = new Chart(safCtx, {
+          type: "bar",
+          data: {
+            labels: ["Jailbreak", "PII extraction", "Hate speech", "Violence", "Sexual content"],
+            datasets: [{ data: [558, 376, 133, 97, 414], backgroundColor: ["#f6821f", "#d92d20", "#8a7cf0", "#d98c00", "#717179"] }]
+          },
+          options: {
+            indexAxis: "y", responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { grid: { display: true }, ticks: { font: { size: 9 }, color: "#a1a1aa" } }, y: { grid: { display: false }, ticks: { font: { size: 9 }, color: "#52525b" } } }
+          }
+        });
+
+        const budCtx = document.getElementById("budgetChart");
+        window.budgetChart = new Chart(budCtx, {
+          type: "bar",
+          data: {
+            labels: ["Tier-1 Support", "Escalations", "Returns"],
+            datasets: [
+              { label: "Spent ($)", data: [1067, 1287, 2375], backgroundColor: "#4a7ef0" },
+              { label: "Budget ($)", data: [6000, 7500, 2500], backgroundColor: "#e6e6e8" }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { boxWidth: 10, font: { size: 10 } } } },
+            scales: { x: { grid: { display: false }, ticks: { font: { size: 9 }, color: "#52525b" } }, y: { beginAtZero: true, grid: { color: "#f0f0f2" }, ticks: { font: { size: 9 }, color: "#a1a1aa" } } }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

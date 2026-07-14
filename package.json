@@ -1,0 +1,13 @@
+{
+  "name": "ai-gateway-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare AI Gateway demo portal with synthetic data (guardrails, token usage, cost savings).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.44.0"
+  }
+}

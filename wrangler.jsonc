@@ -1,0 +1,20 @@
+{
+  // AI Governance & Provisioning demo portal.
+  // Run locally:  npm install && npm run dev
+  // Deploy:       npm run deploy   (add your own routes / custom_domain below)
+  "name": "ai-control-plane-demo",
+  "main": "src/index.js",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  // Production default. Local dev overrides this to "local" via .dev.vars,
+  // which unlocks the temporary-account provisioning endpoints (local only).
+  "vars": {
+    "DEPLOY_ENV": "production"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
